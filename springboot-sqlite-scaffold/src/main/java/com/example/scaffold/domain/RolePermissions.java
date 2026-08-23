@@ -10,10 +10,11 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
+import javax.persistence.Version;
 
 @Entity
 @Table(name = "role_permissions", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_role_permissions_key", columnNames = {"role_id", "module_id", "permission_id"})
+    @UniqueConstraint(name = "UK_role_permissions_composite", columnNames = {"role_id", "module_id", "permission_id"})
 })
 public class RolePermissions {
 
@@ -35,6 +36,9 @@ public class RolePermissions {
 
     @Column(nullable = false)
     private boolean enabled;
+
+    @Version
+    private Long version;
 
     public RolePermissions() {
     }

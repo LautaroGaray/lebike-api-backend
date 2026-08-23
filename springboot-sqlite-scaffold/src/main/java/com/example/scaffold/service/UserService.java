@@ -9,6 +9,8 @@ import com.example.scaffold.repository.RoleRepository;
 import com.example.scaffold.repository.UserRepository;
 import com.example.scaffold.security.PasswordHasher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -17,6 +19,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional(isolation = Isolation.READ_COMMITTED)
 public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -33,6 +36,7 @@ public class UserService {
         this.passwordHasher = passwordHasher;
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Optional<List<UserDTO>> findAll() {
         List<UserDTO> users = userRepository.findAll()
                 .stream()
@@ -42,38 +46,56 @@ public class UserService {
         return users.isEmpty() ? Optional.empty() : Optional.of(users);
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public UserDTO create(UserDTO userDTO) {
+        String username = userDTO.getNickName();
+        if (username != null && userRepository.findByUsername(username).isPresent()) {
+            throw new IllegalArgumentException("Username already exists: " + username);
+        }
+        
+        String email = userDTO.getEmail();
+        if (email != null && userRepository.findByEmail(email).isPresent()) {
+            throw new IllegalArgumentException("Email already exists: " + email);
+        }
+        
         Users user = usersMapper.toEntity(userDTO);
         user.setRole(resolveRoleForCreate(userDTO));
         return usersMapper.toDto(userRepository.save(user));
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Optional<UserDTO> findById(Long id) {
         return userRepository.findById(id).map(usersMapper::toDto);
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Optional<UserDTO> findByEmail(String email) {
         return userRepository.findByEmail(email).map(usersMapper::toDto);
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Optional<Users> findByEmailDb(String email) {
         return userRepository.findByEmail(email).stream().findFirst();
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Optional<UserDTO> validateCredentials(String email, String rawPassword) {
         return userRepository.findByEmail(email)
                 .filter(user -> passwordHasher.matches(rawPassword, user.getPasswordHash()))
                 .map(usersMapper::toDto);
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Optional<UserDTO> findByUsername(String username) {
         return userRepository.findByUsername(username).map(usersMapper::toDto);
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Optional<Users> findByUsernameDB(String username){
         return userRepository.findByUsername(username).stream().findFirst();
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Optional<UserDTO> updateRole(Long userId, Long roleId, String roleName) {
         Optional<Role> resolvedRole = resolveRoleOptional(roleId, roleName);
         if (!resolvedRole.isPresent()) {
@@ -82,8 +104,7 @@ public class UserService {
         return updateById(userId, user -> user.setRole(resolvedRole.get()));
     }
 
-
-
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public Optional<UserDTO> updateUserProfile(Long userId, UserEditRequestDTO request) {
         Users user = userRepository.findById(userId).orElse(null);
         if (user == null || request == null) {
@@ -121,10 +142,12 @@ public class UserService {
         return Optional.of(usersMapper.toDto(userRepository.save(user)));
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void deleteById(Long id) {
         userRepository.deleteById(id);
     }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     private Optional<UserDTO> updateById(Long userId, Consumer<Users> updater) {
         return userRepository.findById(userId)
                 .map(user -> {

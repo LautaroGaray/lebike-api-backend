@@ -17,7 +17,6 @@ import org.springframework.context.annotation.Profile;
 
 @Configuration
 public class SQLiteSeedDataConfig {
-    private static final String USERS_MODULE_MAIN_ID = "USERS";
     private static final String WRITE_PERMISSION_CODE = "WRITE";
 
 
@@ -61,17 +60,20 @@ public class SQLiteSeedDataConfig {
         user.setEmail(email);
         user.setPassword(password);
         user.setRoleName(roleName);
-        userService.create(user);
+        try {
+            userService.create(user);
+        } catch (IllegalArgumentException e) {
+            // Usuario ya existe, continuar
+        }
     }
 
     private Module ensureUsersModule(ModuleRepository moduleRepository) {
-        Module existing = moduleRepository.findByMainId(USERS_MODULE_MAIN_ID).orElse(null);
+        Module existing = moduleRepository.findByName("Users").orElse(null);
         if (existing != null) {
             return existing;
         }
 
         Module usersModule = new Module();
-        usersModule.setMainId(USERS_MODULE_MAIN_ID);
         usersModule.setName("Users");
         usersModule.setParentId(null);
         return moduleRepository.save(usersModule);

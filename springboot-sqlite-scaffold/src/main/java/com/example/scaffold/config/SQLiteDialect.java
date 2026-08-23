@@ -157,6 +157,16 @@ public class SQLiteDialect extends Dialect {
     }
 
     @Override
+    public boolean supportsUniqueConstraintInCreateAlterTable() {
+        return false;
+    }
+
+    @Override
+    public String getAddUniqueConstraintString(String constraintName) {
+        return "";
+    }
+
+    @Override
     public boolean supportsCascadeDelete() {
         return false;
     }

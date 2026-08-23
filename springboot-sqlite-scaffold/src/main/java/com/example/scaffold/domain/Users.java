@@ -11,16 +11,21 @@ import javax.persistence.ManyToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
+import javax.persistence.Version;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = {
+    @UniqueConstraint(name = "UK_users_username", columnNames = "username"),
+    @UniqueConstraint(name = "UK_users_email", columnNames = "email")
+})
 public class Users {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String username;
 
     @Column(nullable = false)
@@ -29,9 +34,12 @@ public class Users {
     @Column(nullable = false)
     private String email;
 
-    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
+    @Version
+    private Long version;
 
     @Column(name = "creation_date", nullable = false, updatable = false)
     private LocalDateTime creationDate;

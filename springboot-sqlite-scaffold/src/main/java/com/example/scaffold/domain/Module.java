@@ -1,13 +1,16 @@
 package com.example.scaffold.domain;
 
+import com.example.scaffold.util.ModuleCodeGenerator;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.PrePersist;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
+import javax.persistence.Version;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,7 +18,8 @@ import java.util.Map;
 
 @Entity
 @Table(name = "modules", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_modules_main_id", columnNames = "main_id")
+    @UniqueConstraint(name = "UK_modules_main_id", columnNames = "main_id"),
+    @UniqueConstraint(name = "UK_modules_name", columnNames = "name")
 })
 public class Module {
 
@@ -32,6 +36,9 @@ public class Module {
     @Column(name = "parent_id")
     private Long parentId;
 
+    @Version
+    private Long version;
+
     @Transient
     private List<Module> children = new ArrayList<>();
 
@@ -39,6 +46,13 @@ public class Module {
     private Map<String, Boolean> permissions = new LinkedHashMap<>();
 
     public Module() {
+    }
+
+    @PrePersist
+    protected void generateMainId() {
+        if (this.mainId == null) {
+            this.mainId = ModuleCodeGenerator.generate();
+        }
     }
 
     public Long getId() {

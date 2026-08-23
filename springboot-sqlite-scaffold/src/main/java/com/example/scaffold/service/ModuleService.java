@@ -9,6 +9,8 @@ import com.example.scaffold.repository.ModuleRepository;
 import com.example.scaffold.repository.RolePermissionsRepository;
 import com.example.scaffold.repository.UserPermissionsRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -18,6 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@Transactional(isolation = Isolation.READ_COMMITTED)
 public class ModuleService {
 
     private final ModuleRepository moduleRepository;
@@ -36,6 +39,7 @@ public class ModuleService {
 
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Optional<List<Module>> loadModulesByUser(UserDTO userDTO) {
         if (userDTO == null || userDTO.getEmail() == null || userDTO.getEmail().trim().isEmpty()) {
             return Optional.empty();
@@ -69,6 +73,7 @@ public class ModuleService {
         return Optional.of(rootModules);
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
     public Optional<Module> reloadModuleWithChildrenByUser(UserDTO userDTO, Long moduleId, String moduleMainId) {
         List<Module> roots = loadModulesByUser(userDTO).orElse(null);
         if (roots == null) {
@@ -80,8 +85,6 @@ public class ModuleService {
             return Optional.empty();
         }
 
-        // Si no hay permisos efectivos habilitados en el nodo ni en su subarbol,
-        // se considera sin acceso despues de revalidar contra BD.
         return hasAnyEnabledPermissionInTree(selected) ? Optional.of(selected) : Optional.empty();
     }
 
@@ -109,7 +112,6 @@ public class ModuleService {
                 continue;
             }
             String permissionKey = buildPermissionKey(row.getPermission());
-            // Las excepciones de usuario siempre sobrescriben lo definido por rol.
             module.getPermissions().put(permissionKey, row.isEnabled());
         }
     }

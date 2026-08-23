@@ -21,6 +21,9 @@ public class ModulesRepository implements ModuleRepository {
     @Value("${repository.query.modules.findByMainId}")
     private String findByMainIdQuery;
 
+    @Value("${repository.query.modules.findByName:select m from Module m where m.name = :name}")
+    private String findByNameQuery;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -59,6 +62,17 @@ public class ModulesRepository implements ModuleRepository {
         List<Module> modules = entityManager
                 .createQuery(findByMainIdQuery, Module.class)
                 .setParameter("mainId", mainId)
+                .setMaxResults(1)
+                .getResultList();
+        return modules.stream().findFirst();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Module> findByName(String name) {
+        List<Module> modules = entityManager
+                .createQuery(findByNameQuery, Module.class)
+                .setParameter("name", name)
                 .setMaxResults(1)
                 .getResultList();
         return modules.stream().findFirst();

@@ -7,10 +7,11 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
+import javax.persistence.Version;
 
 @Entity
 @Table(name = "roles", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_roles_name", columnNames = "name")
+    @UniqueConstraint(name = "UK_roles_name", columnNames = "name")
 })
 public class Role {
     public static final String USER = "USER";
@@ -26,6 +27,9 @@ public class Role {
 
     @Column(nullable = false, length = 128)
     private String description;
+
+    @Version
+    private Long version;
 
     protected Role() {
     }
