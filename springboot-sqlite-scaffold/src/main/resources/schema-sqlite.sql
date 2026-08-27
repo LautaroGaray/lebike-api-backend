@@ -26,6 +26,23 @@ CREATE INDEX IF NOT EXISTS idx_role_permissions_permission_id ON role_permission
 CREATE INDEX IF NOT EXISTS idx_user_permissions_user_id ON user_permissions(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_permissions_module_id ON user_permissions(module_id);
 CREATE INDEX IF NOT EXISTS idx_user_permissions_permission_id ON user_permissions(permission_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_warehouses_allowed_unique ON users_warehouses_allowed(user_id, warehouse_id);
+CREATE INDEX IF NOT EXISTS idx_users_warehouses_allowed_user_id ON users_warehouses_allowed(user_id);
+CREATE INDEX IF NOT EXISTS idx_users_warehouses_allowed_warehouse_id ON users_warehouses_allowed(warehouse_id);
 
 CREATE INDEX IF NOT EXISTS idx_modules_parent_id ON modules(parent_id);
+
+-- Repair indexes
+CREATE INDEX IF NOT EXISTS idx_repair_warehouse_id ON repair(warehouse_id);
+CREATE INDEX IF NOT EXISTS idx_repair_user_id ON repair(user_id);
+CREATE INDEX IF NOT EXISTS idx_repair_article_id ON repair(article_id);
+CREATE INDEX IF NOT EXISTS idx_repair_status ON repair(status);
+
+-- RepairAudit indexes
+CREATE INDEX IF NOT EXISTS idx_repair_audit_repair_id ON repair_audit(repair_id);
+CREATE INDEX IF NOT EXISTS idx_repair_audit_user_id ON repair_audit(user_id);
+
+-- ReceiptStatusHistory indexes
+CREATE INDEX IF NOT EXISTS idx_receipt_status_histpry_receipt_id ON receipt_status_histpry(receipt_id);
+
 

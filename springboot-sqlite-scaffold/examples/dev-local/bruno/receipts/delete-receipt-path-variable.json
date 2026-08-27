@@ -1,0 +1,5 @@
+{
+  "receiptId": 1,
+  "note": "Use with DELETE /receipts/delete/{receiptId}; requester must be ADMIN with warehouse access"
+}
+

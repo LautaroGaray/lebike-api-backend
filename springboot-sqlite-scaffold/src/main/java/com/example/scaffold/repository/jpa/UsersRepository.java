@@ -1,6 +1,6 @@
 package com.example.scaffold.repository.jpa;
 
-import com.example.scaffold.domain.Users;
+import com.example.scaffold.domain.auths.Users;
 import com.example.scaffold.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;

@@ -1,13 +1,15 @@
-package com.example.scaffold.service;
+package com.example.scaffold.service.context;
 
-import com.example.scaffold.domain.Module;
-import com.example.scaffold.domain.RolePermissions;
-import com.example.scaffold.domain.UserPermissions;
-import com.example.scaffold.domain.Users;
+import com.example.scaffold.domain.context.Module;
+import com.example.scaffold.domain.auths.Permissions;
+import com.example.scaffold.domain.auths.RolePermissions;
+import com.example.scaffold.domain.auths.UserPermissions;
+import com.example.scaffold.domain.auths.Users;
 import com.example.scaffold.dto.auth.UserDTO;
 import com.example.scaffold.repository.ModuleRepository;
 import com.example.scaffold.repository.RolePermissionsRepository;
 import com.example.scaffold.repository.UserPermissionsRepository;
+import com.example.scaffold.service.auths.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -129,7 +131,7 @@ public class ModuleService {
         return rootModules;
     }
 
-    private String buildPermissionKey(com.example.scaffold.domain.Permissions permission) {
+    private String buildPermissionKey(Permissions permission) {
         if (permission.getCode() != null && !permission.getCode().trim().isEmpty()) {
             return permission.getCode().trim().toUpperCase();
         }

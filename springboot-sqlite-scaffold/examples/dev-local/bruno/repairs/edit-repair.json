@@ -1,0 +1,9 @@
+{
+  "note": "PUT /repairs/edit/{repairId} — Editar una reparación. Requiere Bearer Token (USER/ADMIN/OWNER). USER solo puede editar repairs de su warehouse.",
+  "warehouseId": 1,
+  "articleId": 2,
+  "price": 200.00,
+  "status": 55,
+  "description": "Actualización: kit de frenos hidráulicos"
+}
+

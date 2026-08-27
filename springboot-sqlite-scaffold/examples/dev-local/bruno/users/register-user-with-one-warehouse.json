@@ -1,0 +1,8 @@
+{
+  "nickName": "operator01",
+  "email": "operator01@local",
+  "password": "operator123",
+  "roleName": "USER",
+  "warehouseIds": [1]
+}
+

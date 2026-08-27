@@ -1,4 +1,4 @@
-package com.example.scaffold.domain;
+package com.example.scaffold.domain.context;
 
 import com.example.scaffold.util.ModuleCodeGenerator;
 import javax.persistence.Column;

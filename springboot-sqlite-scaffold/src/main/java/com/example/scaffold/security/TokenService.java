@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class TokenService {
     public static final String SESSION_TOKEN = TokenService.class.getName() + ".TOKEN";
+    private static final String CLAIM_USER_ID = "userId";
     private static final String CLAIM_ROLE_ID = "roleId";
     private static final String CLAIM_ROLE_NAME = "roleName";
 
@@ -32,17 +33,21 @@ public class TokenService {
     // -------------------------------------------------------------------------
 
     public synchronized String getOrCreateToken(HttpSession session) {
-        return getOrCreateToken(session, null, null);
+        return getOrCreateToken(session, null, null, null);
     }
 
     public synchronized String getOrCreateToken(HttpSession session, Long roleId, String roleName) {
+        return getOrCreateToken(session, null, roleId, roleName);
+    }
+
+    public synchronized String getOrCreateToken(HttpSession session, Long userId, Long roleId, String roleName) {
         Object existing = session.getAttribute(SESSION_TOKEN);
         if (existing instanceof String && isValid((String) existing)) {
             // Si ya hay un JWT válido en la sesión, lo reutilizamos
             return (String) existing;
         }
 
-        String token = buildJwt(session.getId(), roleId, roleName);
+        String token = buildJwt(session.getId(), userId, roleId, roleName);
         session.setAttribute(SESSION_TOKEN, token);
         return token;
     }
@@ -73,6 +78,19 @@ public class TokenService {
                     .getBody();
             Number roleIdValue = claims.get(CLAIM_ROLE_ID, Number.class);
             return roleIdValue != null ? roleIdValue.longValue() : null;
+        } catch (JwtException | IllegalArgumentException | IllegalStateException e) {
+            return null;
+        }
+    }
+
+    public Long getUserId(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(secret.getBytes())
+                    .parseClaimsJws(token)
+                    .getBody();
+            Number userIdValue = claims.get(CLAIM_USER_ID, Number.class);
+            return userIdValue != null ? userIdValue.longValue() : null;
         } catch (JwtException | IllegalArgumentException | IllegalStateException e) {
             return null;
         }
@@ -111,12 +129,13 @@ public class TokenService {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private String buildJwt(String sessionId, Long roleId, String roleName) {
+    private String buildJwt(String sessionId, Long userId, Long roleId, String roleName) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMinutes * 60_000L);
 
         return Jwts.builder()
                 .setSubject(sessionId)
+                .claim(CLAIM_USER_ID, userId)
                 .claim(CLAIM_ROLE_ID, roleId)
                 .claim(CLAIM_ROLE_NAME, roleName)
                 .setIssuedAt(now)

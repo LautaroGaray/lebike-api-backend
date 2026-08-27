@@ -1,10 +1,10 @@
 package com.example.scaffold.controller;
 
-import com.example.scaffold.domain.Module;
+import com.example.scaffold.domain.context.Module;
 import com.example.scaffold.dto.ResponseData;
 import com.example.scaffold.dto.auth.UserDTO;
 import com.example.scaffold.dto.module.ModuleRefreshRequestDTO;
-import com.example.scaffold.service.ModuleService;
+import com.example.scaffold.service.context.ModuleService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;

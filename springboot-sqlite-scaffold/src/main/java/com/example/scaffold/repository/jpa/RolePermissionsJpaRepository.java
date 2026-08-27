@@ -1,6 +1,6 @@
 package com.example.scaffold.repository.jpa;
 
-import com.example.scaffold.domain.RolePermissions;
+import com.example.scaffold.domain.auths.RolePermissions;
 import com.example.scaffold.repository.RolePermissionsRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;

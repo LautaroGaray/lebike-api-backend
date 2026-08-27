@@ -1,4 +1,4 @@
-package com.example.scaffold.domain;
+package com.example.scaffold.domain.auths;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

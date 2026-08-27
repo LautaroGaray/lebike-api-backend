@@ -1,12 +1,13 @@
 package com.example.scaffold.controller;
 
-import com.example.scaffold.domain.Role;
-import com.example.scaffold.domain.Users;
+import com.example.scaffold.domain.auths.Role;
+import com.example.scaffold.domain.auths.Users;
 import com.example.scaffold.dto.ResponseData;
 import com.example.scaffold.dto.auth.UserEditRequestDTO;
 import com.example.scaffold.dto.auth.UserDTO;
+import com.example.scaffold.dto.auth.UserWarehousesEditRequestDTO;
 import com.example.scaffold.security.BearerTokenInterceptor;
-import com.example.scaffold.service.UserService;
+import com.example.scaffold.service.auths.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -53,6 +54,13 @@ public class UserController {
                 : (userDTO.getRole() != null ? userDTO.getRole().name() : Role.USER);
         if (!Role.OWNER.equals(requesterRoleName) && Role.OWNER.equals(requestedRoleName)) {
             return ResponseEntity.status(403).body(new ResponseData(null, false, "Only OWNER can create another OWNER"));
+        }
+
+        if (Role.ADMIN.equals(requestedRoleName)
+                && userDTO.getWarehouseIds() != null
+                && !userDTO.getWarehouseIds().isEmpty()
+                && !Role.OWNER.equals(requesterRoleName)) {
+            return ResponseEntity.status(403).body(new ResponseData(null, false, "Only OWNER can restrict ADMIN warehouses"));
         }
 
         userDTO.setRoleName(requestedRoleName);
@@ -195,6 +203,40 @@ public class UserController {
 
         return ResponseEntity.ok(new ResponseData(updatedUser, true, "Role updated successfully"));
 
+    }
+
+    @PutMapping("/editWarehouses")
+    public ResponseEntity<ResponseData> editWarehouses(@RequestBody UserWarehousesEditRequestDTO request) {
+        String requesterRoleName = getRequesterRoleName();
+        if (!Role.OWNER.equals(requesterRoleName)) {
+            return ResponseEntity.status(403).body(new ResponseData(null, false, "Only OWNER can configure allowed warehouses"));
+        }
+
+        if (request == null) {
+            return ResponseEntity.badRequest().body(new ResponseData(null, false, "Request body is required"));
+        }
+
+        Users targetUser = null;
+        if (StringUtils.hasText(request.getEmail())) {
+            targetUser = userService.findByEmailDb(request.getEmail().trim()).orElse(null);
+        }
+        if (targetUser == null && StringUtils.hasText(request.getNickName())) {
+            targetUser = userService.findByUsernameDB(request.getNickName().trim()).orElse(null);
+        }
+
+        if (targetUser == null) {
+            return ResponseEntity.status(404).body(new ResponseData(null, false, "User does not exist"));
+        }
+
+        try {
+            UserDTO updated = userService.updateAllowedWarehouses(targetUser.getId(), request.getWarehouseIds()).orElse(null);
+            if (updated == null) {
+                return ResponseEntity.status(500).body(new ResponseData(null, false, "Failed to update warehouses"));
+            }
+            return ResponseEntity.ok(new ResponseData(updated, true, "Allowed warehouses updated successfully"));
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().body(new ResponseData(null, false, ex.getMessage()));
+        }
     }
 
 

@@ -1,6 +1,6 @@
-package com.example.scaffold.service;
+package com.example.scaffold.service.context;
 
-import com.example.scaffold.domain.Module;
+import com.example.scaffold.domain.context.Module;
 import com.example.scaffold.repository.ModuleRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;

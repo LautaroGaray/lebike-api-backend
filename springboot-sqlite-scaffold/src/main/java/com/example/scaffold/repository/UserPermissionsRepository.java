@@ -1,6 +1,6 @@
 package com.example.scaffold.repository;
 
-import com.example.scaffold.domain.UserPermissions;
+import com.example.scaffold.domain.auths.UserPermissions;
 
 import java.util.List;
 import java.util.Optional;

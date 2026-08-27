@@ -1,0 +1,5 @@
+{
+  "receiptId": 1,
+  "note": "Use with GET /receipts/history/{receiptId} as OWNER"
+}
+

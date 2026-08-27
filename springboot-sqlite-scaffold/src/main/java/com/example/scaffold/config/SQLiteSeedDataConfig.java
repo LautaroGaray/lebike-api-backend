@@ -1,23 +1,37 @@
 package com.example.scaffold.config;
 
-import com.example.scaffold.domain.Module;
-import com.example.scaffold.domain.Permissions;
-import com.example.scaffold.domain.Role;
-import com.example.scaffold.domain.RolePermissions;
+import com.example.scaffold.domain.context.Module;
+import com.example.scaffold.domain.context.Status;
+import com.example.scaffold.domain.auths.Permissions;
+import com.example.scaffold.domain.auths.Role;
+import com.example.scaffold.domain.auths.RolePermissions;
+import com.example.scaffold.domain.inventory.Article;
+import com.example.scaffold.domain.inventory.Warehouse;
 import com.example.scaffold.dto.auth.UserDTO;
+import com.example.scaffold.repository.ArticleRepository;
 import com.example.scaffold.repository.ModuleRepository;
 import com.example.scaffold.repository.PermissionRepository;
 import com.example.scaffold.repository.RoleRepository;
 import com.example.scaffold.repository.RolePermissionsRepository;
-import com.example.scaffold.service.UserService;
+import com.example.scaffold.repository.StatusRepository;
+import com.example.scaffold.repository.WarehouseRepository;
+import com.example.scaffold.service.auths.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 @Configuration
 public class SQLiteSeedDataConfig {
     private static final String WRITE_PERMISSION_CODE = "WRITE";
+    private static final String READ_PERMISSION_CODE = "READ";
+    private static final String USERS_MODULE_NAME = "Users";
+    private static final String RECEIPTS_MODULE_NAME = "Receipts";
+    private static final String ARTICLES_MODULE_NAME = "Articles";
+    private static final String REPAIRS_MODULE_NAME = "Repairs";
 
 
     @Bean
@@ -26,7 +40,10 @@ public class SQLiteSeedDataConfig {
                                            RoleRepository roleRepository,
                                            ModuleRepository moduleRepository,
                                            PermissionRepository permissionRepository,
-                                           RolePermissionsRepository rolePermissionsRepository) {
+                                           RolePermissionsRepository rolePermissionsRepository,
+                                           StatusRepository statusRepository,
+                                            ArticleRepository articleRepository,
+                                            WarehouseRepository warehouseRepository) {
         return args -> {
             ensureRole(roleRepository, Role.USER, "Default user role");
             ensureRole(roleRepository, Role.ADMIN, "Administration role");
@@ -34,14 +51,133 @@ public class SQLiteSeedDataConfig {
 
             ensureUser(userService, "admin", "admin@local", "admin123", Role.ADMIN);
             ensureUser(userService, "owner", "owner@local", "owner123", Role.OWNER);
+            ensureUser(userService, "user1", "user1@local", "user123", Role.USER);
 
-            Module usersModule = ensureUsersModule(moduleRepository);
+            Module usersModule = ensureModule(moduleRepository, USERS_MODULE_NAME);
+            Module receiptsModule = ensureModule(moduleRepository, RECEIPTS_MODULE_NAME);
+            Module articlesModule = ensureModule(moduleRepository, ARTICLES_MODULE_NAME);
+            Module repairsModule = ensureModule(moduleRepository, REPAIRS_MODULE_NAME);
             Permissions writePermission = ensurePermission(permissionRepository, WRITE_PERMISSION_CODE, "Write");
+            Permissions readPermission = ensurePermission(permissionRepository, READ_PERMISSION_CODE, "Read");
 
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, usersModule, writePermission, false);
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, usersModule, writePermission, true);
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, usersModule, writePermission, true);
+
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, receiptsModule, writePermission, false);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, receiptsModule, readPermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, receiptsModule, writePermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, receiptsModule, readPermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, receiptsModule, writePermission, false);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, receiptsModule, readPermission, true);
+
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, articlesModule, writePermission, false);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, articlesModule, readPermission, false);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, articlesModule, writePermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, articlesModule, readPermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, articlesModule, writePermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, articlesModule, readPermission, true);
+
+            // Repairs: all roles can do ABM (USER restricted to their warehouse by policy)
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, repairsModule, writePermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, repairsModule, readPermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, repairsModule, writePermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, repairsModule, readPermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, repairsModule, writePermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, repairsModule, readPermission, true);
+
+            // Status catalog – status 0 is system-internal for deletion records
+            ensureStatus(statusRepository, 0, "deleted");
+            ensureStatus(statusRepository, 10, "new");
+            ensureStatus(statusRepository, 55, "on preparation");
+            ensureStatus(statusRepository, 75, "ready to dispatched");
+            ensureStatus(statusRepository, 95, "dispatched");
+            ensureStatus(statusRepository, 110, "receipt");
+
+            ensureWarehouse(warehouseRepository, "WH-001", "Berazategui");
+            ensureWarehouse(warehouseRepository, "WH-002", "Ezpeleta");
+            ensureWarehouse(warehouseRepository, "WH-003", "Bernal");
+
+            Long adminId = userService.findByEmailDb("admin@local").map(com.example.scaffold.domain.auths.Users::getId).orElse(null);
+            if (adminId != null) {
+                userService.updateAllowedWarehouses(adminId, java.util.Collections.emptyList());
+            }
+
+            Long userId = userService.findByEmailDb("user1@local").map(com.example.scaffold.domain.auths.Users::getId).orElse(null);
+            Long wh1Id = warehouseRepository.findByCode("WH-001").map(com.example.scaffold.domain.inventory.Warehouse::getId).orElse(null);
+            if (userId != null && wh1Id != null) {
+                userService.updateAllowedWarehouses(userId, java.util.Collections.singletonList(wh1Id));
+            }
+
+            ensureArticle(articleRepository, "ART-0001", "Mountain Tire", "SPARE", "Contoso", "35.00", "49.90");
+            ensureArticle(articleRepository, "ART-0002", "Hydraulic Brake Kit", "SPARE", "Fabrikam", "58.00", "84.00");
+            ensureArticle(articleRepository, "ART-0003", "Carbon Handlebar", "COMPONENT", "Northwind", "72.00", "115.00");
         };
+    }
+
+    private void ensureStatus(StatusRepository statusRepository, Integer code, String description) {
+        Status existing = statusRepository.findByStatus(code).orElse(null);
+        if (existing != null) {
+            if (description != null && !description.equals(existing.getDescription())) {
+                existing.setDescription(description);
+                statusRepository.save(existing);
+            }
+            return;
+        }
+
+        Status status = new Status();
+        status.setStatus(code);
+        status.setDescription(description);
+        statusRepository.save(status);
+    }
+
+    private void ensureWarehouse(WarehouseRepository warehouseRepository, String code, String name) {
+        Warehouse existing = warehouseRepository.findByCode(code).orElse(null);
+        if (existing != null) {
+            existing.setName(name);
+            existing.setActive(true);
+            if (existing.getCreationDate() == null) {
+                existing.setCreationDate(LocalDateTime.now());
+            }
+            existing.setEditDate(LocalDateTime.now());
+            warehouseRepository.save(existing);
+            return;
+        }
+
+        Warehouse warehouse = new Warehouse();
+        warehouse.setCode(code);
+        warehouse.setName(name);
+        warehouse.setActive(true);
+        warehouse.setCreationDate(LocalDateTime.now());
+        warehouse.setEditDate(LocalDateTime.now());
+        warehouseRepository.save(warehouse);
+    }
+
+    private void ensureArticle(ArticleRepository articleRepository,
+                               String sku,
+                               String name,
+                               String type,
+                               String supplier,
+                               String purchasePrice,
+                               String salePrice) {
+        Article existing = articleRepository.findBySku(sku).orElse(null);
+        if (existing != null) {
+            if (!existing.isActive()) {
+                existing.setActive(true);
+                articleRepository.save(existing);
+            }
+            return;
+        }
+
+        Article article = new Article();
+        article.setSku(sku);
+        article.setName(name);
+        article.setType(type);
+        article.setSupplier(supplier);
+        article.setPurchasePrice(new BigDecimal(purchasePrice));
+        article.setSalePrice(new BigDecimal(salePrice));
+        article.setActive(true);
+        articleRepository.save(article);
     }
 
     private void ensureRole(RoleRepository roleRepository, String roleName, String description) {
@@ -67,16 +203,16 @@ public class SQLiteSeedDataConfig {
         }
     }
 
-    private Module ensureUsersModule(ModuleRepository moduleRepository) {
-        Module existing = moduleRepository.findByName("Users").orElse(null);
+    private Module ensureModule(ModuleRepository moduleRepository, String moduleName) {
+        Module existing = moduleRepository.findByName(moduleName).orElse(null);
         if (existing != null) {
             return existing;
         }
 
-        Module usersModule = new Module();
-        usersModule.setName("Users");
-        usersModule.setParentId(null);
-        return moduleRepository.save(usersModule);
+        Module module = new Module();
+        module.setName(moduleName);
+        module.setParentId(null);
+        return moduleRepository.save(module);
     }
 
     private Permissions ensurePermission(PermissionRepository permissionRepository, String code, String name) {
@@ -90,7 +226,7 @@ public class SQLiteSeedDataConfig {
                                       Module module,
                                       Permissions permission,
                                       boolean enabled) {
-        com.example.scaffold.domain.Role role = roleRepository.findByName(roleName).orElse(null);
+        Role role = roleRepository.findByName(roleName).orElse(null);
         if (role == null) {
             return;
         }

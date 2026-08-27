@@ -1,6 +1,6 @@
 package com.example.scaffold;
 
-import com.example.scaffold.domain.Role;
+import com.example.scaffold.domain.auths.Role;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

@@ -1,4 +1,6 @@
-package com.example.scaffold.domain;
+package com.example.scaffold.domain.auths;
+
+import com.example.scaffold.domain.inventory.Warehouse;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -7,6 +9,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
@@ -14,6 +18,8 @@ import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 import javax.persistence.Version;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {
@@ -37,6 +43,14 @@ public class Users {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "users_warehouses_allowed",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "warehouse_id")
+    )
+    private List<Warehouse> warehousesAllowed = new ArrayList<>();
 
     @Version
     private Long version;
@@ -107,6 +121,14 @@ public class Users {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public List<Warehouse> getWarehousesAllowed() {
+        return warehousesAllowed;
+    }
+
+    public void setWarehousesAllowed(List<Warehouse> warehousesAllowed) {
+        this.warehousesAllowed = warehousesAllowed;
     }
 
     public LocalDateTime getCreationDate() {

@@ -1,6 +1,6 @@
 package com.example.scaffold.security;
 
-import com.example.scaffold.domain.Role;
+import com.example.scaffold.domain.auths.Role;
 import com.example.scaffold.dto.ResponseData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpHeaders;
@@ -19,6 +19,7 @@ import java.util.Set;
 public class BearerTokenInterceptor implements HandlerInterceptor {
     public static final String REQUEST_ROLE_ATTRIBUTE = BearerTokenInterceptor.class.getName() + ".ROLE";
     public static final String REQUEST_ROLE_ID_ATTRIBUTE = BearerTokenInterceptor.class.getName() + ".ROLE_ID";
+    public static final String REQUEST_USER_ID_ATTRIBUTE = BearerTokenInterceptor.class.getName() + ".USER_ID";
 
     private static final Set<String> REGISTER_ENDPOINT_SUFFIXES = Set.of(
             "/users/register",
@@ -55,8 +56,10 @@ public class BearerTokenInterceptor implements HandlerInterceptor {
 
             String roleName = tokenService.getRoleName(token);
             Long roleId = tokenService.getRoleId(token);
+            Long userId = tokenService.getUserId(token);
             request.setAttribute(REQUEST_ROLE_ATTRIBUTE, roleName);
             request.setAttribute(REQUEST_ROLE_ID_ATTRIBUTE, roleId);
+            request.setAttribute(REQUEST_USER_ID_ATTRIBUTE, userId);
 
             String path = request.getRequestURI();
             boolean isRegisterEndpoint = REGISTER_ENDPOINT_SUFFIXES.stream().anyMatch(path::endsWith);

@@ -1,6 +1,6 @@
-package com.example.scaffold.service;
+package com.example.scaffold.service.auths;
 
-import com.example.scaffold.domain.Permissions;
+import com.example.scaffold.domain.auths.Permissions;
 import com.example.scaffold.repository.PermissionRepository;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,6 @@
 package com.example.scaffold.repository;
 
-import com.example.scaffold.domain.Module;
+import com.example.scaffold.domain.context.Module;
 
 import java.util.Optional;
 

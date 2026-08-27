@@ -1,6 +1,6 @@
 package com.example.scaffold.repository;
 
-import com.example.scaffold.domain.Role;
+import com.example.scaffold.domain.auths.Role;
 
 import java.util.Optional;
 

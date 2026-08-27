@@ -4,7 +4,7 @@ import com.example.scaffold.dto.ResponseData;
 import com.example.scaffold.dto.auth.TokenResponse;
 import com.example.scaffold.dto.auth.UserDTO;
 import com.example.scaffold.security.TokenService;
-import com.example.scaffold.service.UserService;
+import com.example.scaffold.service.auths.UserService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -46,7 +46,7 @@ public class AuthController {
         }
 
         HttpSession session = request.getSession(true);
-        String token = tokenService.getOrCreateToken(session, userFromDb.getRoleId(), userFromDb.getRoleName());
+        String token = tokenService.getOrCreateToken(session, userFromDb.getId(), userFromDb.getRoleId(), userFromDb.getRoleName());
 
         ResponseData responseData = new ResponseData(new TokenResponse(token), true, "Login successful");
 

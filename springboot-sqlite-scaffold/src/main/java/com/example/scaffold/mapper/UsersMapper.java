@@ -1,9 +1,12 @@
 package com.example.scaffold.mapper;
 
-import com.example.scaffold.domain.Users;
+import com.example.scaffold.domain.auths.Users;
 import com.example.scaffold.dto.auth.UserDTO;
 import com.example.scaffold.security.PasswordHasher;
 import org.springframework.stereotype.Component;
+
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @Component
 public class UsersMapper {
@@ -28,6 +31,7 @@ public class UsersMapper {
         }
 
         UserDTO dto = new UserDTO();
+        dto.setId(entity.getId());
         dto.setNickName(entity.getUsername());
         dto.setEmail(entity.getEmail());
         dto.setPassword(null);
@@ -39,6 +43,17 @@ public class UsersMapper {
             } catch (IllegalArgumentException ignored) {
                 dto.setRole(null);
             }
+        }
+        if (entity.getWarehousesAllowed() != null) {
+            dto.setWarehouseIds(entity.getWarehousesAllowed().stream()
+                    .map(warehouse -> warehouse != null ? warehouse.getId() : null)
+                    .collect(Collectors.toList()));
+            dto.setWarehouseCodes(entity.getWarehousesAllowed().stream()
+                    .map(warehouse -> warehouse != null ? warehouse.getCode() : null)
+                    .collect(Collectors.toList()));
+        } else {
+            dto.setWarehouseIds(new ArrayList<>());
+            dto.setWarehouseCodes(new ArrayList<>());
         }
         dto.setCreationDate(entity.getCreationDate());
         dto.setEditDate(entity.getEditDate());

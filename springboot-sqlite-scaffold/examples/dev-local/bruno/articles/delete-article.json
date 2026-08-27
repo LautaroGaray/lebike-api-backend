@@ -1,0 +1,5 @@
+{
+  "articleId": 1,
+  "note": "Use this id in path: DELETE /articles/delete/{articleId}"
+}
+

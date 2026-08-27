@@ -1,0 +1,10 @@
+{
+  "sku": "ART-0100",
+  "name": "Disc Brake Rotor",
+  "type": "SPARE",
+  "supplier": "Contoso",
+  "purchasePrice": 44.50,
+  "salePrice": 69.90,
+  "active": true
+}
+

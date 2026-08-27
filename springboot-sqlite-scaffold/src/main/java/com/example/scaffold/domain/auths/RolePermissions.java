@@ -1,4 +1,6 @@
-package com.example.scaffold.domain;
+package com.example.scaffold.domain.auths;
+
+import com.example.scaffold.domain.context.Module;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -13,25 +15,25 @@ import javax.persistence.UniqueConstraint;
 import javax.persistence.Version;
 
 @Entity
-@Table(name = "user_permissions", uniqueConstraints = {
-    @UniqueConstraint(name = "UK_user_permissions_composite", columnNames = {"user_id", "module_id", "permission_id"})
+@Table(name = "role_permissions", uniqueConstraints = {
+    @UniqueConstraint(name = "UK_role_permissions_composite", columnNames = {"role_id", "module_id", "permission_id"})
 })
-public class UserPermissions {
+public class RolePermissions {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_user_permissions_user"))
-    private Users user;
+    @JoinColumn(name = "role_id", nullable = false, foreignKey = @ForeignKey(name = "fk_role_permissions_role"))
+    private Role role;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "module_id", nullable = false, foreignKey = @ForeignKey(name = "fk_user_permissions_module"))
+    @JoinColumn(name = "module_id", nullable = false, foreignKey = @ForeignKey(name = "fk_role_permissions_module"))
     private Module module;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "permission_id", nullable = false, foreignKey = @ForeignKey(name = "fk_user_permissions_permission"))
+    @JoinColumn(name = "permission_id", nullable = false, foreignKey = @ForeignKey(name = "fk_role_permissions_permission"))
     private Permissions permission;
 
     @Column(nullable = false)
@@ -40,19 +42,19 @@ public class UserPermissions {
     @Version
     private Long version;
 
-    protected UserPermissions() {
+    public RolePermissions() {
     }
 
     public Long getId() {
         return id;
     }
 
-    public Users getUser() {
-        return user;
+    public Role getRole() {
+        return role;
     }
 
-    public void setUser(Users user) {
-        this.user = user;
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public Module getModule() {
@@ -79,4 +81,3 @@ public class UserPermissions {
         this.enabled = enabled;
     }
 }
-

@@ -1,6 +1,6 @@
 package com.example.scaffold.repository.jpa;
 
-import com.example.scaffold.domain.Module;
+import com.example.scaffold.domain.context.Module;
 import com.example.scaffold.repository.ModuleRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
