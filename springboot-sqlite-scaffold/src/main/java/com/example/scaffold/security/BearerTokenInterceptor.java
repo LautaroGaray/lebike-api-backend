@@ -1,7 +1,7 @@
 package com.example.scaffold.security;
 
-import com.example.scaffold.domain.auths.Role;
 import com.example.scaffold.dto.ResponseData;
+import com.example.scaffold.service.auths.UserAuthorizationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -13,30 +13,26 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.Set;
-
 @Component
 public class BearerTokenInterceptor implements HandlerInterceptor {
     public static final String REQUEST_ROLE_ATTRIBUTE = BearerTokenInterceptor.class.getName() + ".ROLE";
     public static final String REQUEST_ROLE_ID_ATTRIBUTE = BearerTokenInterceptor.class.getName() + ".ROLE_ID";
     public static final String REQUEST_USER_ID_ATTRIBUTE = BearerTokenInterceptor.class.getName() + ".USER_ID";
 
-    private static final Set<String> REGISTER_ENDPOINT_SUFFIXES = Set.of(
-            "/users/register",
-            "/auth/register",
-            "/users/edit"
-    );
-
-    private static final Set<String> REGISTER_ENDPOINT_SUFFIXES_OWNER = Set.of(
-            "/users/delete",
-            "/users/editRole"
-    );
+    public static final String PARAM_MODULE_MAIN_ID = "main_id";
+    public static final String PARAM_ACTION = "action";
+    public static final String HEADER_MODULE_MAIN_ID = "X-Module-Main-Id";
+    public static final String HEADER_ACTION = "X-Action";
 
     private final TokenService tokenService;
+    private final UserAuthorizationService userAuthorizationService;
     private final ObjectMapper objectMapper;
 
-    public BearerTokenInterceptor(TokenService tokenService, ObjectMapper objectMapper) {
+    public BearerTokenInterceptor(TokenService tokenService,
+                                  UserAuthorizationService userAuthorizationService,
+                                  ObjectMapper objectMapper) {
         this.tokenService = tokenService;
+        this.userAuthorizationService = userAuthorizationService;
         this.objectMapper = objectMapper;
     }
 
@@ -61,16 +57,32 @@ public class BearerTokenInterceptor implements HandlerInterceptor {
             request.setAttribute(REQUEST_ROLE_ID_ATTRIBUTE, roleId);
             request.setAttribute(REQUEST_USER_ID_ATTRIBUTE, userId);
 
-            String path = request.getRequestURI();
-            boolean isRegisterEndpoint = REGISTER_ENDPOINT_SUFFIXES.stream().anyMatch(path::endsWith);
-            boolean isRegisterEndpointOwner = REGISTER_ENDPOINT_SUFFIXES_OWNER.stream().anyMatch(path::endsWith);
+            String action = request.getParameter(PARAM_ACTION);
+            if (action == null || action.trim().isEmpty()) {
+                action = request.getHeader(HEADER_ACTION);
+            }
+            if (action == null || action.trim().isEmpty()) {
+                return reject(request, response, handler, HttpStatus.BAD_REQUEST,
+                        "Missing required action (query param 'action' or header 'X-Action')");
+            }
 
-            if (isRegisterEndpoint && !(Role.ADMIN.equals(roleName) || Role.OWNER.equals(roleName))) {
-                return reject(request, response, handler, HttpStatus.FORBIDDEN, "Insufficient role permissions");
+            String moduleMainId = request.getParameter(PARAM_MODULE_MAIN_ID);
+            if (moduleMainId == null || moduleMainId.trim().isEmpty()) {
+                moduleMainId = request.getHeader(HEADER_MODULE_MAIN_ID);
             }
-            if (isRegisterEndpointOwner && !Role.OWNER.equals(roleName)) {
-                return reject(request, response, handler, HttpStatus.FORBIDDEN, "Insufficient role permissions");
+            String normalizedAction = action.trim().toUpperCase();
+            if (!UserAuthorizationService.ACTION_NONE.equals(normalizedAction)
+                    && (moduleMainId == null || moduleMainId.trim().isEmpty())) {
+                return reject(request, response, handler, HttpStatus.BAD_REQUEST,
+                        "Missing required module id (query param 'main_id' or header 'X-Module-Main-Id')");
             }
+
+            boolean granted = userAuthorizationService.canAccess(userId, roleId, moduleMainId, action);
+            if (!granted) {
+                return reject(request, response, handler, HttpStatus.FORBIDDEN,
+                        "Insufficient permissions for action/module combination");
+            }
+
             return true;
         } catch (Exception e) {
             return reject(request, response, handler, HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected authentication error");

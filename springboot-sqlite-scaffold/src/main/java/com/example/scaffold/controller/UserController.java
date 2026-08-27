@@ -6,7 +6,6 @@ import com.example.scaffold.dto.ResponseData;
 import com.example.scaffold.dto.auth.UserEditRequestDTO;
 import com.example.scaffold.dto.auth.UserDTO;
 import com.example.scaffold.dto.auth.UserWarehousesEditRequestDTO;
-import com.example.scaffold.security.BearerTokenInterceptor;
 import com.example.scaffold.service.auths.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -44,24 +43,9 @@ public class UserController {
             return ResponseEntity.badRequest().body(new ResponseData(null, false, "User data is null"));
         }
 
-        String requesterRoleName = getRequesterRoleName();
-        if (requesterRoleName == null) {
-            return ResponseEntity.status(403).body(new ResponseData(null, false, "Unable to determine requester role"));
-        }
-
         String requestedRoleName = StringUtils.hasText(userDTO.getRoleName())
                 ? userDTO.getRoleName().trim().toUpperCase()
                 : (userDTO.getRole() != null ? userDTO.getRole().name() : Role.USER);
-        if (!Role.OWNER.equals(requesterRoleName) && Role.OWNER.equals(requestedRoleName)) {
-            return ResponseEntity.status(403).body(new ResponseData(null, false, "Only OWNER can create another OWNER"));
-        }
-
-        if (Role.ADMIN.equals(requestedRoleName)
-                && userDTO.getWarehouseIds() != null
-                && !userDTO.getWarehouseIds().isEmpty()
-                && !Role.OWNER.equals(requesterRoleName)) {
-            return ResponseEntity.status(403).body(new ResponseData(null, false, "Only OWNER can restrict ADMIN warehouses"));
-        }
 
         userDTO.setRoleName(requestedRoleName);
 
@@ -99,11 +83,6 @@ public class UserController {
             return ResponseEntity.badRequest().body(new ResponseData(null, false, "User data is null"));
         }
 
-        String requesterRoleName = getRequesterRoleName();
-        if (requesterRoleName == null) {
-            return ResponseEntity.status(403).body(new ResponseData(null, false, "Unable to determine requester role"));
-        }
-
         if (!StringUtils.hasText(request.getCurrentEmail()) && !StringUtils.hasText(request.getCurrentNickName())) {
             return ResponseEntity.badRequest().body(new ResponseData(null, false, "Current email or nickname is required"));
         }
@@ -118,12 +97,6 @@ public class UserController {
 
         if (existingUser == null) {
             return ResponseEntity.status(404).body(new ResponseData(null, false, "User does not exist"));
-        }
-
-        if (existingUser.getRole() != null
-                && Role.OWNER.equals(existingUser.getRole().getName())
-                && !Role.OWNER.equals(requesterRoleName)) {
-            return ResponseEntity.status(403).body(new ResponseData(null, false, "Only OWNER can modify an OWNER user"));
         }
 
         if (!StringUtils.hasText(request.getNewEmail()) && !StringUtils.hasText(request.getNewNickName()) && !StringUtils.hasText(request.getPassword())) {
@@ -168,11 +141,6 @@ public class UserController {
             return ResponseEntity.badRequest().body(new ResponseData(null, false, "User data is null"));
         }
 
-        String requesterRoleName = getRequesterRoleName();
-        if (requesterRoleName == null) {
-            return ResponseEntity.status(403).body(new ResponseData(null, false, "Unable to determine requester role"));
-        }
-
         if(!StringUtils.hasText(userDto.getEmail())){
             return ResponseEntity.badRequest().body(new ResponseData(null, false, "Email is empty"));
         }
@@ -190,12 +158,6 @@ public class UserController {
             return ResponseEntity.status(404).body(new ResponseData(null, false, "User with this email does not exist"));
         }
 
-        if (existingUser.getRole() != null
-                && Role.OWNER.equals(existingUser.getRole().getName())
-                && !Role.OWNER.equals(requesterRoleName)) {
-            return ResponseEntity.status(403).body(new ResponseData(null, false, "Only OWNER can modify an OWNER user"));
-        }
-
         UserDTO updatedUser = userService.updateRole(existingUser.getId(), userDto.getRoleId(), requestedRoleName).orElse(null);
         if(Objects.isNull(updatedUser)){
             return ResponseEntity.status(500).body(new ResponseData(null, false, "Failed to update role"));
@@ -207,11 +169,6 @@ public class UserController {
 
     @PutMapping("/editWarehouses")
     public ResponseEntity<ResponseData> editWarehouses(@RequestBody UserWarehousesEditRequestDTO request) {
-        String requesterRoleName = getRequesterRoleName();
-        if (!Role.OWNER.equals(requesterRoleName)) {
-            return ResponseEntity.status(403).body(new ResponseData(null, false, "Only OWNER can configure allowed warehouses"));
-        }
-
         if (request == null) {
             return ResponseEntity.badRequest().body(new ResponseData(null, false, "Request body is required"));
         }
@@ -240,13 +197,5 @@ public class UserController {
     }
 
 
-    private String getRequesterRoleName() {
-        Object roleAttribute = org.springframework.web.context.request.RequestContextHolder.getRequestAttributes() != null
-                ? ((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.getRequestAttributes())
-                .getRequest().getAttribute(BearerTokenInterceptor.REQUEST_ROLE_ATTRIBUTE)
-                : null;
-
-        return roleAttribute instanceof String ? ((String) roleAttribute).trim().toUpperCase() : null;
-    }
 
 }

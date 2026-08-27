@@ -32,8 +32,10 @@ public class SQLiteSeedDataConfig {
     private static final String RECEIPTS_MODULE_NAME = "Receipts";
     private static final String ARTICLES_MODULE_NAME = "Articles";
     private static final String REPAIRS_MODULE_NAME = "Repairs";
-
-
+    private static final String USERS_MODULE_MAIN_ID = "MOD_USERS";
+    private static final String RECEIPTS_MODULE_MAIN_ID = "MOD_RECEIPTS";
+    private static final String ARTICLES_MODULE_MAIN_ID = "MOD_ARTICLES";
+    private static final String REPAIRS_MODULE_MAIN_ID = "MOD_REPAIRS";
     @Bean
     @Profile("local")
     public CommandLineRunner seedAdminUser(UserService userService,
@@ -53,16 +55,19 @@ public class SQLiteSeedDataConfig {
             ensureUser(userService, "owner", "owner@local", "owner123", Role.OWNER);
             ensureUser(userService, "user1", "user1@local", "user123", Role.USER);
 
-            Module usersModule = ensureModule(moduleRepository, USERS_MODULE_NAME);
-            Module receiptsModule = ensureModule(moduleRepository, RECEIPTS_MODULE_NAME);
-            Module articlesModule = ensureModule(moduleRepository, ARTICLES_MODULE_NAME);
-            Module repairsModule = ensureModule(moduleRepository, REPAIRS_MODULE_NAME);
+            Module usersModule = ensureModule(moduleRepository, USERS_MODULE_NAME, USERS_MODULE_MAIN_ID);
+            Module receiptsModule = ensureModule(moduleRepository, RECEIPTS_MODULE_NAME, RECEIPTS_MODULE_MAIN_ID);
+            Module articlesModule = ensureModule(moduleRepository, ARTICLES_MODULE_NAME, ARTICLES_MODULE_MAIN_ID);
+            Module repairsModule = ensureModule(moduleRepository, REPAIRS_MODULE_NAME, REPAIRS_MODULE_MAIN_ID);
             Permissions writePermission = ensurePermission(permissionRepository, WRITE_PERMISSION_CODE, "Write");
             Permissions readPermission = ensurePermission(permissionRepository, READ_PERMISSION_CODE, "Read");
 
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, usersModule, writePermission, false);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, usersModule, readPermission, false);
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, usersModule, writePermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, usersModule, readPermission, true);
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, usersModule, writePermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, usersModule, readPermission, true);
 
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, receiptsModule, writePermission, false);
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, receiptsModule, readPermission, true);
@@ -203,13 +208,18 @@ public class SQLiteSeedDataConfig {
         }
     }
 
-    private Module ensureModule(ModuleRepository moduleRepository, String moduleName) {
+    private Module ensureModule(ModuleRepository moduleRepository, String moduleName, String moduleMainId) {
         Module existing = moduleRepository.findByName(moduleName).orElse(null);
         if (existing != null) {
+            if (moduleMainId != null && !moduleMainId.equals(existing.getMainId())) {
+                existing.setMainId(moduleMainId);
+                return moduleRepository.save(existing);
+            }
             return existing;
         }
 
         Module module = new Module();
+        module.setMainId(moduleMainId);
         module.setName(moduleName);
         module.setParentId(null);
         return moduleRepository.save(module);
