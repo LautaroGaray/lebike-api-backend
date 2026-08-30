@@ -1,8 +1,7 @@
 @echo off
 setlocal
 
-set "BASE=%~dp0..\springboot-sqlite-scaffold"
-set "DB_BROWSER_EXE=%BASE%\tools\sqlite-gui\portable\DB Browser for SQLite.exe"
+set "DB_BROWSER_EXE=%~dp0sqlite-gui\portable\DB Browser for SQLite.exe"
 set "DB_FILE=%USERPROFILE%\springboot-sqlite-scaffold-local.db"
 
 if not exist "%DB_BROWSER_EXE%" (
