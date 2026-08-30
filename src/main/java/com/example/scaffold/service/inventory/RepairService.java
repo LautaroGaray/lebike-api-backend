@@ -22,6 +22,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -143,14 +144,29 @@ public class RepairService {
     public List<RepairAuditResponseDTO> findHistory(Long repairId, Long requesterId) {
         Users requester = documentWarehouseScopeService.getRequesterOrThrow(requesterId);
         documentWarehouseScopeService.assertCanViewHistory(requester, "Repair");
-
-        Repair repair = repairRepository.findById(repairId)
-                .orElseThrow(() -> new IllegalArgumentException("Repair not found"));
-        documentWarehouseScopeService.assertCanAccessWarehouse(requester,
-                repair.getWarehouse() != null ? repair.getWarehouse().getCode() : null,
-                "Repair");
-
         List<RepairAudit> audits = repairAuditRepository.findByRepairIdOrderByCreationDateDesc(repairId);
+        Optional<Repair> repairOptional = repairRepository.findById(repairId);
+
+        if (repairOptional.isPresent()) {
+            Repair repair = repairOptional.get();
+            documentWarehouseScopeService.assertCanAccessWarehouse(requester,
+                    repair.getWarehouse() != null ? repair.getWarehouse().getCode() : null,
+                    "Repair");
+        } else if (!audits.isEmpty()) {
+            Long warehouseId = resolveWarehouseIdFromAudit(audits);
+            if (warehouseId == null) {
+                if (!documentWarehouseScopeService.isOwner(requester)) {
+                    throw new IllegalArgumentException("Repair access denied for requester scope");
+                }
+            } else {
+                Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                        .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+                documentWarehouseScopeService.assertCanAccessWarehouse(requester, warehouse.getCode(), "Repair");
+            }
+        } else {
+            throw new IllegalArgumentException("Repair not found");
+        }
+
         List<RepairAuditResponseDTO> result = new ArrayList<>();
         for (RepairAudit audit : audits) {
             if (audit != null) {
@@ -326,5 +342,14 @@ public class RepairService {
             return code;
         }
         return code.trim().replace('_', '-').toUpperCase();
+    }
+
+    private Long resolveWarehouseIdFromAudit(List<RepairAudit> audits) {
+        for (RepairAudit audit : audits) {
+            if (audit != null && audit.getWarehouseId() != null) {
+                return audit.getWarehouseId();
+            }
+        }
+        return null;
     }
 }
