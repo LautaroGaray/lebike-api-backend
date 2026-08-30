@@ -1,6 +1,5 @@
 package com.example.scaffold.domain.Audits;
 
-import com.example.scaffold.domain.context.Status;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,18 +29,11 @@ public class RepairAudit implements Serializable {
     @Column(nullable = false)
     private Long warehouseId;
 
-    @Column(nullable = true)
-    private Long articleId;
+    @Column(name = "article_ids")
+    private String articleIds;
 
     @Column(nullable = false)
     private Long userId;
-
-    @Column(nullable = false)
-    private Integer status;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "status", referencedColumnName = "status", insertable = false, updatable = false)
-    private Status statusInfo;
 
     @Column
     private String description;

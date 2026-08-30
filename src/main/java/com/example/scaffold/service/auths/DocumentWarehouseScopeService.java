@@ -98,5 +98,39 @@ public class DocumentWarehouseScopeService {
         }
         return code.trim().replace('_', '-').toUpperCase(Locale.ROOT);
     }
-}
 
+    public boolean canAccessWarehouse(Users requester, String warehouseCode) {
+        String role = normalizeRoleName(requester != null && requester.getRole() != null ? requester.getRole().getName() : null);
+        if (Role.OWNER.equals(role)) {
+            return true;
+        }
+
+        List<String> allowedCodes = toAllowedWarehouseCodes(requester);
+        if (allowedCodes.isEmpty()) {
+            return false;
+        }
+
+        String normalizedCode = normalizeWarehouseCode(warehouseCode);
+        if (Role.USER.equals(role) && allowedCodes.size() != 1) {
+            return false;
+        }
+        return allowedCodes.contains(normalizedCode);
+    }
+
+    public void assertCanAccessWarehouse(Users requester, String warehouseCode, String resourceName) {
+        if (!canAccessWarehouse(requester, warehouseCode)) {
+            throw new IllegalArgumentException(resourceName + " access denied for requester scope");
+        }
+    }
+
+    public boolean canViewHistory(Users requester) {
+        String role = normalizeRoleName(requester != null && requester.getRole() != null ? requester.getRole().getName() : null);
+        return !Role.USER.equals(role);
+    }
+
+    public void assertCanViewHistory(Users requester, String resourceName) {
+        if (!canViewHistory(requester)) {
+            throw new IllegalArgumentException(resourceName + " history is not allowed for USER role");
+        }
+    }
+}

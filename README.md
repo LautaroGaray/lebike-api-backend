@@ -79,13 +79,13 @@ ${user.home}/springboot-sqlite-scaffold-local.db
 | Código | Descripción          | Uso                          |
 |--------|----------------------|------------------------------|
 | 0      | deleted              | Sistema interno (auditoría)  |
-| 10     | new                  | Recibo/Reparación nueva      |
+| 10     | new                  | Recibo nuevo                 |
 | 55     | on preparation       |                              |
 | 75     | ready to dispatched  |                              |
 | 95     | dispatched           |                              |
 | 110    | receipt              | Confirmado recibido          |
 
-> **Nota**: El estado 0 (`deleted`) es interno del sistema y no puede usarse al crear recibos ni reparaciones.
+> **Nota**: El estado 0 (`deleted`) es interno del sistema y no puede usarse al crear recibos.
 
 ## Autenticación
 
@@ -154,6 +154,11 @@ curl -X POST "http://localhost:8080/articles/register" \
 
 > Para endpoints de warehouses usa `main_id=MOD_WAREHOUSES`.
 
+Para endpoints de repairs (`main_id=MOD_REPAIRS`):
+- `USER` y `ADMIN` solo pueden crear/editar/eliminar/listar repairs en warehouses asociados.
+- `OWNER` puede operar en todas las repairs.
+- `USER` nunca puede consultar historial de repairs.
+
 ## Endpoints de Usuarios
 
 | Método | Ruta                  | Query params requeridos                    | Descripción                              |
@@ -207,19 +212,19 @@ curl -X POST "http://localhost:8080/articles/register" \
 
 | Método | Ruta                    | Query params requeridos                    | Descripción                                        |
 |--------|-------------------------|--------------------------------------------|----------------------------------------------------|
-| POST   | /repairs/register       | `action=WRITE&main_id=MOD_REPAIRS`         | Crear reparación                                   |
-| PUT    | /repairs/edit/{id}      | `action=WRITE&main_id=MOD_REPAIRS`         | Editar reparación                                  |
-| DELETE | /repairs/delete/{id}    | `action=WRITE&main_id=MOD_REPAIRS`         | Eliminar → registra en `repair_audit` con status=0 |
-| GET    | /repairs/findAll        | `action=READ&main_id=MOD_REPAIRS`          | Listar reparaciones                                |
-| GET    | /repairs/history/{id}   | `action=READ&main_id=MOD_REPAIRS`          | Historial de auditoría de la reparación            |
+| POST   | /repairs/register       | `action=WRITE&main_id=MOD_REPAIRS`         | Crear reparación (sin estado)                      |
+| PUT    | /repairs/edit/{id}      | `action=WRITE&main_id=MOD_REPAIRS`         | Editar reparación (sin estado)                     |
+| DELETE | /repairs/delete/{id}    | `action=WRITE&main_id=MOD_REPAIRS`         | Eliminar reparación + snapshot en `repair_audit`   |
+| GET    | /repairs/findAll        | `action=READ&main_id=MOD_REPAIRS`          | Listar reparaciones filtradas por alcance de warehouses |
+| GET    | /repairs/findByWarehouse | `action=READ&main_id=MOD_REPAIRS`         | Listar reparaciones por warehouse dentro del alcance del rol |
+| GET    | /repairs/history/{id}   | `action=READ&main_id=MOD_REPAIRS`          | Historial de auditoría (`USER` no permitido)       |
 
 ### Auditoría de Reparaciones
 
 Cada operación (CREATE, UPDATE, DELETE) genera un registro en la tabla `repair_audit` con:
 - `repair_id`, `price`, `warehouse_id`, `article_id`, `user_id`
-- `status`: estado al momento de la acción (0 para DELETE)
 - `action_type`: `CREATE` | `UPDATE` | `DELETE`
-- `description`: descripción de la reparación o "Repair deleted"
+- `description`: snapshot textual (descripción vigente o "Repair deleted")
 - `creation_date`: timestamp del evento
 
 ## Patrón Repository
@@ -265,7 +270,8 @@ examples/dev-local/bruno/
 │   ├── edit-repair.json           PUT  /repairs/edit/{id}
 │   ├── delete-repair.json         DELETE /repairs/delete/{id}
 │   ├── find-all-repairs.json      GET  /repairs/findAll
-│   └── repair-history.json        GET  /repairs/history/{id}  (OWNER)
+│   ├── find-by-warehouse-repairs.json GET /repairs/findByWarehouse
+│   └── repair-history.json        GET  /repairs/history/{id}  (USER no permitido)
 └── users/
     └── (ejemplos de usuario)
 ```

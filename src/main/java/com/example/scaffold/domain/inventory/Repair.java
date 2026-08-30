@@ -1,14 +1,15 @@
 package com.example.scaffold.domain.inventory;
 
 import com.example.scaffold.domain.auths.Users;
-import com.example.scaffold.domain.context.Status;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -22,13 +23,6 @@ public class Repair implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long Id;
 
-    @Column(nullable = false)
-    private Integer status;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "status", referencedColumnName = "status", insertable = false, updatable = false)
-    private Status statusInfo;
-
     @Column
     private String description;
 
@@ -39,9 +33,11 @@ public class Repair implements Serializable {
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="article_id")
-    private Article article;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "repair_articles",
+            joinColumns = @JoinColumn(name = "repair_id"),
+            inverseJoinColumns = @JoinColumn(name = "article_id"))
+    private List<Article> articles = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)

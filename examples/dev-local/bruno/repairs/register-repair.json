@@ -1,9 +1,8 @@
 {
-  "note": "POST /repairs/register — Crear una reparación. Requiere Bearer Token (USER/ADMIN/OWNER). USER solo puede usar su warehouse asignado.",
+  "note": "POST /repairs/register — Crear una reparación sin estado. Requiere Bearer Token. USER y ADMIN solo pueden operar en warehouses asociados; OWNER puede operar en todos.",
   "warehouseId": 1,
-  "articleId": 1,
+  "articleIds": [1, 2],
   "price": 120.50,
-  "status": 10,
   "description": "Reemplazo de neumático delantero"
 }
 

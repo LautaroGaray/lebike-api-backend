@@ -44,3 +44,12 @@ Examples:
 - `warehouses/find-all-warehouses.json` -> `GET /warehouses/findAll?action=READ&main_id=MOD_WAREHOUSES`
 - `warehouses/find-warehouse-by-id-path-variable.json` -> `GET /warehouses/find/{warehouseId}?action=READ&main_id=MOD_WAREHOUSES`
 
+## Repair endpoints
+
+- `repairs/register-repair.json` -> `POST /repairs/register?action=WRITE&main_id=MOD_REPAIRS`
+- `repairs/edit-repair.json` -> `PUT /repairs/edit/{repairId}?action=WRITE&main_id=MOD_REPAIRS`
+- `repairs/delete-repair.json` -> `DELETE /repairs/delete/{repairId}?action=WRITE&main_id=MOD_REPAIRS`
+- `repairs/find-all-repairs.json` -> `GET /repairs/findAll?action=READ&main_id=MOD_REPAIRS`
+- `repairs/find-by-warehouse-repairs.json` -> `GET /repairs/findByWarehouse?warehouseCode={warehouseCode}&action=READ&main_id=MOD_REPAIRS`
+- `repairs/repair-history.json` -> `GET /repairs/history/{repairId}?action=READ&main_id=MOD_REPAIRS` (`USER` no permitido)
+

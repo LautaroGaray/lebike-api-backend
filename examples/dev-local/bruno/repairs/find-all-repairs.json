@@ -1,4 +1,4 @@
 {
-  "note": "GET /repairs/findAll — Listar reparaciones. Requiere Bearer Token. OWNER ve todas, ADMIN sin restricción ve todas, ADMIN con warehouses asignados ve solo los suyos, USER ve solo las de su warehouse."
+  "note": "GET /repairs/findAll — Listar reparaciones. Requiere Bearer Token. USER y ADMIN ven solo repairs de sus warehouses asociados; OWNER ve todas."
 }
 

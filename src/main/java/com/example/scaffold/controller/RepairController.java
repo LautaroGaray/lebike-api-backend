@@ -27,10 +27,11 @@ public class RepairController {
     @PostMapping("/register")
     public ResponseEntity<ResponseData> register(@RequestBody RepairRequestDTO request) {
         try {
-            RepairResponseDTO created = repairService.create(request, authorizationService.getRequesterUserId());
+            Long requesterId = authorizationService.getRequesterUserId();
+            RepairResponseDTO created = repairService.create(request, requesterId);
             return ResponseEntity.ok(new ResponseData(created, true, "Repair created successfully"));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(new ResponseData(null, false, ex.getMessage()));
+            return toRepairErrorResponse(ex);
         }
     }
 
@@ -38,14 +39,11 @@ public class RepairController {
     public ResponseEntity<ResponseData> edit(@PathVariable Long repairId,
                                              @RequestBody RepairRequestDTO request) {
         try {
-            RepairResponseDTO updated = repairService.update(repairId, request, authorizationService.getRequesterUserId());
+            Long requesterId = authorizationService.getRequesterUserId();
+            RepairResponseDTO updated = repairService.update(repairId, request, requesterId);
             return ResponseEntity.ok(new ResponseData(updated, true, "Repair updated successfully"));
         } catch (IllegalArgumentException ex) {
-            String msg = ex.getMessage();
-            if ("Repair not found".equals(msg)) {
-                return ResponseEntity.status(404).body(new ResponseData(null, false, msg));
-            }
-            return ResponseEntity.badRequest().body(new ResponseData(null, false, msg));
+            return toRepairErrorResponse(ex);
         }
     }
 
@@ -55,25 +53,59 @@ public class RepairController {
             repairService.delete(repairId, authorizationService.getRequesterUserId());
             return ResponseEntity.ok(new ResponseData(null, true, "Repair deleted successfully"));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(404).body(new ResponseData(null, false, ex.getMessage()));
+            return toRepairErrorResponse(ex);
         }
     }
 
     @GetMapping("/findAll")
     public ResponseEntity<ResponseData> findAll() {
-        List<RepairResponseDTO> repairs = repairService.findAll();
-        return ResponseEntity.ok(new ResponseData(repairs, true, "Repairs retrieved successfully"));
+        try {
+            Long requesterId = authorizationService.getRequesterUserId();
+            List<RepairResponseDTO> repairs = repairService.findAll(requesterId);
+            return ResponseEntity.ok(new ResponseData(repairs, true, "Repairs retrieved successfully"));
+        } catch (IllegalArgumentException ex) {
+            return toRepairErrorResponse(ex);
+        }
+    }
+
+    @GetMapping("/findByWarehouse")
+    public ResponseEntity<ResponseData> findByWarehouse(@RequestParam String warehouseCode) {
+        try {
+            Long requesterId = authorizationService.getRequesterUserId();
+            List<RepairResponseDTO> repairs = repairService.findByWarehouse(warehouseCode, requesterId);
+            return ResponseEntity.ok(new ResponseData(repairs, true, "Repairs retrieved successfully"));
+        } catch (IllegalArgumentException ex) {
+            return toRepairErrorResponse(ex);
+        }
     }
 
     @GetMapping("/history/{repairId}")
     public ResponseEntity<ResponseData> history(@PathVariable Long repairId) {
 
         try {
-            List<RepairAuditResponseDTO> history = repairService.findHistory(repairId);
+            Long requesterId = authorizationService.getRequesterUserId();
+            List<RepairAuditResponseDTO> history = repairService.findHistory(repairId, requesterId);
             return ResponseEntity.ok(new ResponseData(history, true, "Repair history retrieved successfully"));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(404).body(new ResponseData(null, false, ex.getMessage()));
+            return toRepairErrorResponse(ex);
         }
     }
-}
 
+    private ResponseEntity<ResponseData> toRepairErrorResponse(IllegalArgumentException ex) {
+        String message = ex.getMessage() == null ? "Invalid repair request" : ex.getMessage();
+
+        if ("Requester user is not authenticated".equals(message)) {
+            return ResponseEntity.status(401).body(new ResponseData(null, false, message));
+        }
+
+        if ("Requester user not found".equals(message) || "Repair not found".equals(message)) {
+            return ResponseEntity.status(404).body(new ResponseData(null, false, message));
+        }
+
+        if (message.contains("access denied") || message.contains("not allowed for USER")) {
+            return ResponseEntity.status(403).body(new ResponseData(null, false, message));
+        }
+
+        return ResponseEntity.badRequest().body(new ResponseData(null, false, message));
+    }
+}

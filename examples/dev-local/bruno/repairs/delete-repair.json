@@ -1,5 +1,5 @@
 {
-  "note": "DELETE /repairs/delete/{repairId} — Eliminar una reparación. Requiere Bearer Token (USER/ADMIN/OWNER). Se registra en repair_audit con status 0 (deleted). Pasar repairId como path variable.",
+  "note": "DELETE /repairs/delete/{repairId} — Eliminar una reparación. Requiere Bearer Token. Se registra snapshot en repair_audit con action_type DELETE. Pasar repairId como path variable.",
   "repairId": 1
 }
 

@@ -1,9 +1,8 @@
 {
-  "note": "PUT /repairs/edit/{repairId} — Editar una reparación. Requiere Bearer Token (USER/ADMIN/OWNER). USER solo puede editar repairs de su warehouse.",
+  "note": "PUT /repairs/edit/{repairId} — Editar una reparación sin estado. Requiere Bearer Token. USER y ADMIN solo pueden operar en warehouses asociados; OWNER en todos.",
   "warehouseId": 1,
-  "articleId": 2,
+  "articleIds": [],
   "price": 200.00,
-  "status": 55,
   "description": "Actualización: kit de frenos hidráulicos"
 }
 

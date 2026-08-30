@@ -35,8 +35,9 @@ CREATE INDEX IF NOT EXISTS idx_modules_parent_id ON modules(parent_id);
 -- Repair indexes
 CREATE INDEX IF NOT EXISTS idx_repair_warehouse_id ON repair(warehouse_id);
 CREATE INDEX IF NOT EXISTS idx_repair_user_id ON repair(user_id);
-CREATE INDEX IF NOT EXISTS idx_repair_article_id ON repair(article_id);
-CREATE INDEX IF NOT EXISTS idx_repair_status ON repair(status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_repair_articles_unique ON repair_articles(repair_id, article_id);
+CREATE INDEX IF NOT EXISTS idx_repair_articles_repair_id ON repair_articles(repair_id);
+CREATE INDEX IF NOT EXISTS idx_repair_articles_article_id ON repair_articles(article_id);
 
 -- RepairAudit indexes
 CREATE INDEX IF NOT EXISTS idx_repair_audit_repair_id ON repair_audit(repair_id);

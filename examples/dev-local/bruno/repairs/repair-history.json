@@ -1,5 +1,5 @@
 {
-  "note": "GET /repairs/history/{repairId} — Historial de auditoría de una reparación. Solo para OWNER. Incluye todos los eventos CREATE, UPDATE y DELETE de la reparación. Pasar repairId como path variable.",
+  "note": "GET /repairs/history/{repairId} — Historial de auditoría de una reparación (CREATE, UPDATE, DELETE). USER nunca puede acceder; ADMIN/OWNER solo dentro de alcance de warehouses.",
   "repairId": 1
 }
 

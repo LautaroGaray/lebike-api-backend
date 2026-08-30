@@ -1,0 +1,5 @@
+{
+  "warehouseCode": "WH-001",
+  "note": "GET /repairs/findByWarehouse?warehouseCode={warehouseCode} — USER y ADMIN solo pueden consultar warehouses asociados; OWNER puede consultar cualquiera"
+}
+
