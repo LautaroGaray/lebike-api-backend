@@ -16,6 +16,7 @@ Examples:
 - `POST /articles/register?action=WRITE&main_id=MOD_ARTICLES`
 - `GET /repairs/findAll?action=READ&main_id=MOD_REPAIRS`
 - `PUT /users/edit?action=WRITE&main_id=MOD_USERS`
+- `GET /warehouses/findAll?action=READ&main_id=MOD_WAREHOUSES`
 
 ## Article endpoints
 
@@ -28,9 +29,18 @@ Examples:
 - `users/register-user-with-one-warehouse.json` -> `POST /users/register?action=WRITE&main_id=MOD_USERS`
 - `users/owner-restrict-admin-warehouses.json` -> `PUT /users/editWarehouses?action=WRITE&main_id=MOD_USERS`
 - `users/owner-unrestrict-admin-warehouses.json` -> `PUT /users/editWarehouses?action=WRITE&main_id=MOD_USERS`
+- `users/assign-warehouses-user-or-admin.json` -> `PUT /users/assignWarehouses?action=WRITE&main_id=MOD_USERS`
 
 ## Receipt helpers
 
 - `receipts/delete-receipt-path-variable.json` -> `DELETE /receipts/delete/{receiptId}?action=WRITE&main_id=MOD_RECEIPTS`
 - `receipts/owner-history-receipt.json` -> `GET /receipts/history/{receiptId}?action=READ&main_id=MOD_RECEIPTS`
+
+## Warehouse endpoints
+
+- `warehouses/register-warehouse.json` -> `POST /warehouses/register?action=WRITE&main_id=MOD_WAREHOUSES` (OWNER only)
+- `warehouses/edit-warehouse-path-variable.json` + `warehouses/edit-warehouse-body.json` -> `PUT /warehouses/edit/{warehouseId}?action=WRITE&main_id=MOD_WAREHOUSES` (OWNER only)
+- `warehouses/delete-warehouse-path-variable.json` -> `DELETE /warehouses/delete/{warehouseId}?action=WRITE&main_id=MOD_WAREHOUSES` (OWNER only)
+- `warehouses/find-all-warehouses.json` -> `GET /warehouses/findAll?action=READ&main_id=MOD_WAREHOUSES`
+- `warehouses/find-warehouse-by-id-path-variable.json` -> `GET /warehouses/find/{warehouseId}?action=READ&main_id=MOD_WAREHOUSES`
 

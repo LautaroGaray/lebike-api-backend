@@ -1,23 +1,25 @@
 package com.example.scaffold.service.document;
 
-import com.example.scaffold.domain.Audits.ReceiptStatusHistory;
 import com.example.scaffold.domain.auths.Users;
+import com.example.scaffold.domain.auths.Role;
 import com.example.scaffold.domain.documents.DocumentsEnum;
 import com.example.scaffold.domain.documents.Receipt;
 import com.example.scaffold.domain.documents.ReceiptDetail;
 import com.example.scaffold.domain.documents.ReceiptStatusLog;
 import com.example.scaffold.domain.inventory.Article;
+import com.example.scaffold.domain.inventory.Warehouse;
 import com.example.scaffold.dto.document.ReceiptCreateRequestDTO;
 import com.example.scaffold.dto.document.ReceiptDetailCreateRequestDTO;
 import com.example.scaffold.dto.document.ReceiptDetailResponseDTO;
 import com.example.scaffold.dto.document.ReceiptResponseDTO;
 import com.example.scaffold.dto.document.ReceiptStatusLogResponseDTO;
+import com.example.scaffold.dto.document.ReceiptUpdateRequestDTO;
 import com.example.scaffold.repository.ArticleRepository;
 import com.example.scaffold.repository.ReceiptRepository;
-import com.example.scaffold.repository.ReceiptStatusHistoryRepository;
 import com.example.scaffold.repository.ReceiptStatusLogRepository;
 import com.example.scaffold.repository.StatusRepository;
 import com.example.scaffold.repository.UserRepository;
+import com.example.scaffold.repository.WarehouseRepository;
 import com.example.scaffold.util.KeyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -26,7 +28,9 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 @Service
@@ -37,36 +41,40 @@ public class ReceiptService {
 	private final UserRepository userRepository;
 	private final ArticleRepository articleRepository;
 	private final ReceiptStatusLogRepository receiptStatusLogRepository;
-	private final ReceiptStatusHistoryRepository receiptStatusHistoryRepository;
 	private final StatusRepository statusRepository;
+	private final WarehouseRepository warehouseRepository;
 	private final KeyService keyService;
 
 	public static final int DELETED_STATUS = 0;
+	public static final String RECEIPT_CREATED_EVENT = "Receipt created";
+	public static final String RECEIPT_DELETED_EVENT = "Receipt deleted";
 
 	public ReceiptService(ReceiptRepository receiptRepository,
 						  UserRepository userRepository,
 						  ArticleRepository articleRepository,
 						  ReceiptStatusLogRepository receiptStatusLogRepository,
-						  ReceiptStatusHistoryRepository receiptStatusHistoryRepository,
 						  StatusRepository statusRepository,
+						  WarehouseRepository warehouseRepository,
 						  KeyService keyService) {
 		this.receiptRepository = receiptRepository;
 		this.userRepository = userRepository;
 		this.articleRepository = articleRepository;
 		this.receiptStatusLogRepository = receiptStatusLogRepository;
-		this.receiptStatusHistoryRepository = receiptStatusHistoryRepository;
 		this.statusRepository = statusRepository;
+		this.warehouseRepository = warehouseRepository;
 		this.keyService = keyService;
 	}
 
 	public ReceiptResponseDTO createReceiptWithDetails(ReceiptCreateRequestDTO request) {
 		Users user = userRepository.findById(request.getUserId()).orElseThrow(() -> new IllegalArgumentException("User not found"));
+		String originCode = resolveWarehouseCode(request.getOrigin(), "origin");
+		String destinyCode = resolveWarehouseCode(request.getDestiny(), "destiny");
 
 		Receipt receipt = new Receipt();
 		receipt.setReceiptKey(StringUtils.hasText(request.getReceiptKey()) ? request.getReceiptKey().trim() : keyService.getKey(DocumentsEnum.RECEIPT, null).getCompletKey());
-		receipt.setStatus(request.getStatus());
-		receipt.setOrigin(request.getOrigin().trim());
-		receipt.setDestiny(request.getDestiny().trim());
+		receipt.setStatus(request.getStatus()>0?request.getStatus():10);
+		receipt.setOrigin(originCode);
+		receipt.setDestiny(destinyCode);
 		receipt.setDescription(request.getDescription());
 		receipt.setUser(user);
 		receipt.setCreationDate(LocalDateTime.now());
@@ -89,24 +97,19 @@ public class ReceiptService {
 		receipt.getDetaile().addAll(detailList);
 
 		Receipt created = receiptRepository.save(receipt);
+		registerStatusLogSnapshot(created, null, created.getStatus(), created.getUser().getId(), created.getUser().getEmail(), RECEIPT_CREATED_EVENT);
 		return toDto(created);
 	}
 
-	public ReceiptResponseDTO updateReceiptWithDetails(Long receiptId, ReceiptCreateRequestDTO request) {
+	public ReceiptResponseDTO updateReceiptWithDetails(Long receiptId, ReceiptUpdateRequestDTO request) {
 		Receipt receipt = receiptRepository.findById(receiptId)
 				.orElseThrow(() -> new IllegalArgumentException("Receipt not found"));
 		Integer previousStatus = receipt.getStatus();
 
-		Users user = userRepository.findById(request.getUserId()).orElseThrow(() -> new IllegalArgumentException("User not found"));
-
 		receipt.setStatus(request.getStatus());
-		receipt.setOrigin(request.getOrigin().trim());
-		receipt.setDestiny(request.getDestiny().trim());
-		receipt.setDescription(request.getDescription());
-		receipt.setUser(user);
 		receipt.setEditDate(LocalDateTime.now());
 
-		receipt.getDetaile().clear();
+		// Edit now only appends new details; existing rows are preserved.
 		for (ReceiptDetailCreateRequestDTO detailRequest : request.getDetails()) {
 			if (detailRequest == null || detailRequest.getArticleId() == null) {
 				continue;
@@ -131,24 +134,34 @@ public class ReceiptService {
 		Receipt receipt = receiptRepository.findById(receiptId)
 				.orElseThrow(() -> new IllegalArgumentException("Receipt not found"));
 
-		// Log deletion in ReceiptStatusHistory before removing the record
-		ReceiptStatusHistory history = new ReceiptStatusHistory();
-		history.setReceiptId(receipt.getId());
-		history.setReceiptKey(receipt.getReceiptKey());
-		history.setStatus(DELETED_STATUS);
-		history.setDescription("Receipt deleted");
-		history.setUserId(requesterId);
-		if (receipt.getUser() != null) {
-			history.setUserEmail(receipt.getUser().getEmail());
+		Long actorUserId = requesterId != null ? requesterId : receipt.getUser().getId();
+		String actorEmail = findUserEmailById(actorUserId);
+		if (!StringUtils.hasText(actorEmail) && receipt.getUser() != null) {
+			actorEmail = receipt.getUser().getEmail();
 		}
-		history.setCreationDate(LocalDateTime.now());
-		receiptStatusHistoryRepository.save(history);
+
+		registerStatusLogSnapshot(receipt, receipt.getStatus(), DELETED_STATUS, actorUserId, actorEmail, RECEIPT_DELETED_EVENT);
 
 		receiptRepository.deleteById(receiptId);
 	}
 
 	private void registerStatusLogIfChanged(Receipt receipt, Integer previousStatus, Integer newStatus) {
 		if (receipt == null || previousStatus == null || newStatus == null || previousStatus.equals(newStatus)) {
+			return;
+		}
+
+		Long actorUserId = receipt.getUser() != null ? receipt.getUser().getId() : null;
+		String actorEmail = receipt.getUser() != null ? receipt.getUser().getEmail() : null;
+		registerStatusLogSnapshot(receipt, previousStatus, newStatus, actorUserId, actorEmail, receipt.getDescription());
+	}
+
+	private void registerStatusLogSnapshot(Receipt receipt,
+										 Integer previousStatus,
+										 Integer newStatus,
+										 Long actorUserId,
+										 String actorEmail,
+										 String eventDescription) {
+		if (receipt == null || newStatus == null || actorUserId == null) {
 			return;
 		}
 
@@ -159,29 +172,57 @@ public class ReceiptService {
 		statusLog.setNewStatus(newStatus);
 		statusLog.setOrigin(receipt.getOrigin());
 		statusLog.setDestiny(receipt.getDestiny());
-		statusLog.setDescription(receipt.getDescription());
+		statusLog.setDescription(eventDescription);
 		statusLog.setReceiptCreationDate(receipt.getCreationDate());
 		statusLog.setReceiptEditDate(receipt.getEditDate());
 		statusLog.setChangedAt(LocalDateTime.now());
 
-		if (receipt.getUser() != null) {
-			statusLog.setUserId(receipt.getUser().getId());
-			statusLog.setUserEmail(receipt.getUser().getEmail());
-		}
+		statusLog.setUserId(actorUserId);
+		statusLog.setUserEmail(actorEmail);
 
 		receiptStatusLogRepository.save(statusLog);
 	}
 
+	private String findUserEmailById(Long userId) {
+		if (userId == null) {
+			return null;
+		}
+		return userRepository.findById(userId)
+				.map(Users::getEmail)
+				.orElse(null);
+	}
+
 	@Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
 	public List<ReceiptResponseDTO> findByUserAndWarehouse(Long userId, String warehouseCode) {
-		List<Receipt> receipts = receiptRepository.findByUserAndWarehouseOrderByIdDesc(userId, warehouseCode);
+		String normalizedWarehouseCode = normalizeWarehouseCode(warehouseCode);
+		List<Receipt> receipts = receiptRepository.findByUserAndWarehouseOrderByIdDesc(userId, normalizedWarehouseCode);
 		return mapToDtoList(receipts);
 	}
 
 	@Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
-	public List<ReceiptResponseDTO> findAll() {
-		List<Receipt> receipts = receiptRepository.findAllOrderByIdDesc();
-		return mapToDtoList(receipts);
+	public List<ReceiptResponseDTO> findAll(Long requesterUserId) {
+		Users requester = userRepository.findById(requesterUserId)
+				.orElseThrow(() -> new IllegalArgumentException("Requester user not found"));
+		String requesterRole = normalizeRoleName(requester.getRole() != null ? requester.getRole().getName() : null);
+
+		if (Role.OWNER.equals(requesterRole)) {
+			return mapToDtoList(receiptRepository.findAllOrderByIdDesc());
+		}
+
+		List<String> allowedWarehouseCodes = toAllowedWarehouseCodes(requester);
+		if (allowedWarehouseCodes.isEmpty()) {
+			return Collections.emptyList();
+		}
+
+		if (Role.USER.equals(requesterRole)) {
+			return mapToDtoList(receiptRepository.findByDestinyInOrderByIdDesc(allowedWarehouseCodes));
+		}
+
+		if (Role.ADMIN.equals(requesterRole)) {
+			return mapToDtoList(receiptRepository.findByOriginInAndDestinyInOrderByIdDesc(allowedWarehouseCodes, allowedWarehouseCodes));
+		}
+
+		return Collections.emptyList();
 	}
 
 	@Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
@@ -273,5 +314,45 @@ public class ReceiptService {
 		dto.setReceiptEditDate(log.getReceiptEditDate());
 		dto.setChangedAt(log.getChangedAt());
 		return dto;
+	}
+
+	private String resolveWarehouseCode(String rawCode, String fieldName) {
+		String normalized = normalizeWarehouseCode(rawCode);
+		if (!StringUtils.hasText(normalized)) {
+			throw new IllegalArgumentException("Warehouse code is required for " + fieldName);
+		}
+		return warehouseRepository.findByCode(normalized)
+				.map(warehouse -> warehouse.getCode())
+				.orElseThrow(() -> new IllegalArgumentException("Warehouse not found for " + fieldName + ": " + normalized));
+	}
+
+	private String normalizeWarehouseCode(String rawCode) {
+		if (!StringUtils.hasText(rawCode)) {
+			return rawCode;
+		}
+		String normalized = rawCode.trim();
+		if (normalized.startsWith("\"") && normalized.endsWith("\"") && normalized.length() >= 2) {
+			normalized = normalized.substring(1, normalized.length() - 1);
+		}
+		normalized = normalized.replace('_', '-').toUpperCase();
+		return normalized;
+	}
+
+	private List<String> toAllowedWarehouseCodes(Users user) {
+		if (user == null || user.getWarehousesAllowed() == null) {
+			return Collections.emptyList();
+		}
+		List<String> codes = new ArrayList<>();
+		for (Warehouse warehouse : user.getWarehousesAllowed()) {
+			if (warehouse == null || !StringUtils.hasText(warehouse.getCode())) {
+				continue;
+			}
+			codes.add(warehouse.getCode().trim().toUpperCase(Locale.ROOT));
+		}
+		return codes;
+	}
+
+	private String normalizeRoleName(String roleName) {
+		return StringUtils.hasText(roleName) ? roleName.trim().toUpperCase(Locale.ROOT) : "";
 	}
 }

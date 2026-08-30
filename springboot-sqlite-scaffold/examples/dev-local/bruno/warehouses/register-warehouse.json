@@ -1,0 +1,7 @@
+{
+  "code": "WH-010",
+  "name": "Quilmes",
+  "active": true,
+  "note": "Use with POST /warehouses/register?action=WRITE&main_id=MOD_WAREHOUSES (OWNER only)"
+}
+

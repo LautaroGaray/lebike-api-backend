@@ -1,4 +1,4 @@
-package com.example.scaffold.controller;
+ package com.example.scaffold.controller;
 
 import com.example.scaffold.domain.auths.Role;
 import com.example.scaffold.domain.auths.Users;
@@ -6,6 +6,7 @@ import com.example.scaffold.dto.ResponseData;
 import com.example.scaffold.dto.auth.UserEditRequestDTO;
 import com.example.scaffold.dto.auth.UserDTO;
 import com.example.scaffold.dto.auth.UserWarehousesEditRequestDTO;
+import com.example.scaffold.service.auths.UserAuthorizationService;
 import com.example.scaffold.service.auths.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -20,9 +21,12 @@ public class UserController {
 
 
     private final UserService userService;
+    private final UserAuthorizationService authorizationService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService,
+                          UserAuthorizationService authorizationService) {
         this.userService = userService;
+        this.authorizationService = authorizationService;
     }
 
     @GetMapping("/find")
@@ -169,32 +173,51 @@ public class UserController {
 
     @PutMapping("/editWarehouses")
     public ResponseEntity<ResponseData> editWarehouses(@RequestBody UserWarehousesEditRequestDTO request) {
-        if (request == null) {
-            return ResponseEntity.badRequest().body(new ResponseData(null, false, "Request body is required"));
-        }
+		return updateWarehousesInternal(request);
+	}
 
-        Users targetUser = null;
-        if (StringUtils.hasText(request.getEmail())) {
-            targetUser = userService.findByEmailDb(request.getEmail().trim()).orElse(null);
-        }
-        if (targetUser == null && StringUtils.hasText(request.getNickName())) {
-            targetUser = userService.findByUsernameDB(request.getNickName().trim()).orElse(null);
-        }
+	@PutMapping("/assignWarehouses")
+	public ResponseEntity<ResponseData> assignWarehouses(@RequestBody UserWarehousesEditRequestDTO request) {
+		return updateWarehousesInternal(request);
+	}
 
-        if (targetUser == null) {
-            return ResponseEntity.status(404).body(new ResponseData(null, false, "User does not exist"));
-        }
+	private ResponseEntity<ResponseData> updateWarehousesInternal(UserWarehousesEditRequestDTO request) {
+         if (request == null) {
+             return ResponseEntity.badRequest().body(new ResponseData(null, false, "Request body is required"));
+         }
 
-        try {
-            UserDTO updated = userService.updateAllowedWarehouses(targetUser.getId(), request.getWarehouseIds()).orElse(null);
-            if (updated == null) {
-                return ResponseEntity.status(500).body(new ResponseData(null, false, "Failed to update warehouses"));
-            }
-            return ResponseEntity.ok(new ResponseData(updated, true, "Allowed warehouses updated successfully"));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(new ResponseData(null, false, ex.getMessage()));
-        }
-    }
+         Users targetUser = null;
+         if (StringUtils.hasText(request.getEmail())) {
+             targetUser = userService.findByEmailDb(request.getEmail().trim()).orElse(null);
+         }
+         if (targetUser == null && StringUtils.hasText(request.getNickName())) {
+             targetUser = userService.findByUsernameDB(request.getNickName().trim()).orElse(null);
+         }
+
+         if (targetUser == null) {
+             return ResponseEntity.status(404).body(new ResponseData(null, false, "User does not exist"));
+         }
+
+         try {
+             Long requesterId = authorizationService.getRequesterUserId();
+             if (requesterId == null) {
+                 return ResponseEntity.status(401).body(new ResponseData(null, false, "Requester user is not authenticated"));
+             }
+             UserDTO updated = userService.updateAllowedWarehousesByRequester(requesterId, targetUser.getId(), request.getWarehouseIds()).orElse(null);
+             if (updated == null) {
+                 return ResponseEntity.status(500).body(new ResponseData(null, false, "Failed to update warehouses"));
+             }
+             return ResponseEntity.ok(new ResponseData(updated, true, "Allowed warehouses updated successfully"));
+         } catch (IllegalArgumentException ex) {
+             if (ex.getMessage() != null && (ex.getMessage().startsWith("Only ADMIN or OWNER")
+                     || ex.getMessage().startsWith("ADMIN can only")
+                     || ex.getMessage().startsWith("ADMIN has no associated")
+                     || ex.getMessage().startsWith("ADMIN cannot assign"))) {
+                 return ResponseEntity.status(403).body(new ResponseData(null, false, ex.getMessage()));
+             }
+             return ResponseEntity.badRequest().body(new ResponseData(null, false, ex.getMessage()));
+         }
+     }
 
 
 

@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -122,6 +123,54 @@ public class UserService {
             user.setWarehousesAllowed(resolved);
         });
     }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public Optional<UserDTO> updateAllowedWarehousesByRequester(Long requesterUserId, Long targetUserId, List<Long> warehouseIds) {
+         Users requester = userRepository.findById(requesterUserId)
+                 .orElseThrow(() -> new IllegalArgumentException("Requester user not found"));
+         Users targetUser = userRepository.findById(targetUserId)
+                 .orElseThrow(() -> new IllegalArgumentException("Target user does not exist"));
+
+         String requesterRole = normalizeRoleName(requester.getRole() != null ? requester.getRole().getName() : null);
+         String targetRole = normalizeRoleName(targetUser.getRole() != null ? targetUser.getRole().getName() : null);
+
+         if (!Role.USER.equals(targetRole) && !Role.ADMIN.equals(targetRole)) {
+             throw new IllegalArgumentException("Target user role must be USER or ADMIN");
+         }
+
+         if (Role.OWNER.equals(requesterRole)) {
+             return updateAllowedWarehouses(targetUserId, warehouseIds);
+         }
+
+         if (!Role.ADMIN.equals(requesterRole)) {
+             throw new IllegalArgumentException("Only ADMIN or OWNER can update allowed warehouses");
+         }
+
+         String targetRoleNormalized = normalizeRoleName(targetUser.getRole() != null ? targetUser.getRole().getName() : null);
+         if (!Role.USER.equals(targetRoleNormalized)) {
+             throw new IllegalArgumentException("ADMIN can only update warehouses for users with USER role");
+         }
+
+         List<Long> safeIds = warehouseIds == null ? java.util.Collections.emptyList() : warehouseIds.stream()
+                 .filter(java.util.Objects::nonNull)
+                 .distinct()
+                 .collect(Collectors.toList());
+
+         List<Warehouse> adminAllowedWarehouses = requester.getWarehousesAllowed() == null
+                 ? java.util.Collections.emptyList()
+                 : requester.getWarehousesAllowed();
+         if (adminAllowedWarehouses.isEmpty()) {
+             throw new IllegalArgumentException("ADMIN has no associated warehouses to assign");
+         }
+
+         for (Long warehouseId : safeIds) {
+             if (!containsWarehouseId(adminAllowedWarehouses, warehouseId)) {
+                 throw new IllegalArgumentException("ADMIN cannot assign warehouse outside their associated list");
+             }
+         }
+
+         return updateAllowedWarehouses(targetUserId, safeIds);
+     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public Optional<UserDTO> updateUserProfile(Long userId, UserEditRequestDTO request) {
@@ -246,5 +295,21 @@ public class UserService {
                 .filter(java.util.Objects::nonNull)
                 .map(Warehouse::getId)
                 .collect(Collectors.toList());
+    }
+
+    private String normalizeRoleName(String roleName) {
+        return StringUtils.hasText(roleName) ? roleName.trim().toUpperCase(Locale.ROOT) : "";
+    }
+
+    private boolean containsWarehouseId(List<Warehouse> warehouses, Long warehouseId) {
+        if (warehouses == null || warehouseId == null) {
+            return false;
+        }
+        for (Warehouse warehouse : warehouses) {
+            if (warehouse != null && warehouseId.equals(warehouse.getId())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

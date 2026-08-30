@@ -1,0 +1,7 @@
+{
+  "code": "WH-001",
+  "name": "Berazategui Central",
+  "active": true,
+  "note": "Use as request body with PUT /warehouses/edit/{warehouseId} (OWNER only)"
+}
+

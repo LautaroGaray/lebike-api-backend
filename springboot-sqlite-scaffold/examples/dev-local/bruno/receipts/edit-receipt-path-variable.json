@@ -1,0 +1,5 @@
+{
+  "receiptId": 1,
+  "note": "Use with PUT /receipts/edit/{receiptId}"
+}
+

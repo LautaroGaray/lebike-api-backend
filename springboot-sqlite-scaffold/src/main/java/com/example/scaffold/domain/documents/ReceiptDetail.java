@@ -5,13 +5,16 @@ import lombok.Getter;
 import lombok.Setter;
 import javax.persistence.*;
 import javax.persistence.Entity;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @Entity
 @Table(name="receipt_detail")
-public class ReceiptDetail {
+public class ReceiptDetail implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -8,12 +8,15 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 import javax.persistence.Version;
+import java.io.Serializable;
 
 @Entity
 @Table(name = "roles", uniqueConstraints = {
     @UniqueConstraint(name = "UK_roles_name", columnNames = "name")
 })
-public class Role {
+public class Role implements Serializable {
+	private static final long serialVersionUID = 1L;
+	
     public static final String USER = "USER";
     public static final String ADMIN = "ADMIN";
     public static final String OWNER = "OWNER";

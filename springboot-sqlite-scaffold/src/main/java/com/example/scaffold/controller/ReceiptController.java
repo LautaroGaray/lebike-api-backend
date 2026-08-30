@@ -2,6 +2,7 @@ package com.example.scaffold.controller;
 
 import com.example.scaffold.dto.ResponseData;
 import com.example.scaffold.dto.document.ReceiptCreateRequestDTO;
+import com.example.scaffold.dto.document.ReceiptUpdateRequestDTO;
 import com.example.scaffold.dto.document.ReceiptResponseDTO;
 import com.example.scaffold.dto.document.ReceiptStatusLogResponseDTO;
 import com.example.scaffold.service.auths.UserAuthorizationService;
@@ -36,7 +37,7 @@ public class ReceiptController {
 
     @PutMapping("/edit/{receiptId}")
     public ResponseEntity<ResponseData> edit(@PathVariable Long receiptId,
-                                             @RequestBody ReceiptCreateRequestDTO request) {
+                                             @RequestBody ReceiptUpdateRequestDTO request) {
         try {
             ReceiptResponseDTO updated = receiptService.updateReceiptWithDetails(receiptId, request);
             return ResponseEntity.ok(new ResponseData(updated, true, "Receipt updated successfully"));
@@ -82,9 +83,19 @@ public class ReceiptController {
 
     @GetMapping("/findAll")
     public ResponseEntity<ResponseData> findAll() {
-
-        List<ReceiptResponseDTO> receipts = receiptService.findAll();
-        return ResponseEntity.ok(new ResponseData(receipts, true, "Receipts retrieved successfully"));
-    }
-}
-
+		try {
+			Long requesterId = authorizationService.getRequesterUserId();
+			if (requesterId == null) {
+				return ResponseEntity.status(401).body(new ResponseData(null, false, "Requester user is not authenticated"));
+			}
+			List<ReceiptResponseDTO> receipts = receiptService.findAll(requesterId);
+			return ResponseEntity.ok(new ResponseData(receipts, true, "Receipts retrieved successfully"));
+		} catch (IllegalArgumentException ex) {
+			String message = ex.getMessage();
+			if ("Requester user not found".equals(message)) {
+				return ResponseEntity.status(404).body(new ResponseData(null, false, message));
+			}
+			return ResponseEntity.badRequest().body(new ResponseData(null, false, message));
+		}
+     }
+ }

@@ -1,0 +1,8 @@
+{
+  "email": "user1@local",
+  "warehouseIds": [
+    1
+  ],
+  "note": "Use with PUT /users/assignWarehouses?action=WRITE&main_id=MOD_USERS. OWNER can assign to USER/ADMIN; ADMIN can assign only to USER and only within ADMIN associated warehouses"
+}
+

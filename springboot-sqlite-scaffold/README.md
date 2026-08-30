@@ -55,7 +55,7 @@ ${user.home}/springboot-sqlite-scaffold-local.db
 | Email           | Password   | Rol   | Warehouses          |
 |-----------------|------------|-------|---------------------|
 | owner@local     | owner123   | OWNER | todos               |
-| admin@local     | admin123   | ADMIN | todos (sin restricción) |
+| admin@local     | admin123   | ADMIN | WH-001, WH-002      |
 | user1@local     | user123    | USER  | WH-001 (Berazategui)|
 
 ## Warehouses de seed
@@ -115,8 +115,8 @@ s  "http://localhost:8080/repairs/findAll?action=READ&main_id=MOD_REPAIRS"
 - El interceptor extrae `userId`, `roleId`, `roleName` del token.
 - El frontend debe enviar en cada request protegido:
   - `action`: `READ` | `WRITE` | `NONE`
-  - `main_id`: obligatorio para `READ` y `WRITE` (ej: `MOD_ARTICLES`, `MOD_RECEIPTS`, `MOD_REPAIRS`, `MOD_USERS`)
-e- Alternativa equivalente (menos visible en URL):
+  - `main_id`: obligatorio para `READ` y `WRITE` (ej: `MOD_ARTICLES`, `MOD_RECEIPTS`, `MOD_REPAIRS`, `MOD_USERS`, `MOD_WAREHOUSES`)
+- Alternativa equivalente (menos visible en URL):
   - Header `X-Action`
   - Header `X-Module-Main-Id`
 - Reglas aplicadas:
@@ -146,13 +146,13 @@ curl -X POST "http://localhost:8080/articles/register" \
 
 ## Política de Roles y Warehouses
 
-| Rol   | Warehouses visibles                                | Receipts WRITE | Repairs WRITE |
-|-------|----------------------------------------------------|----------------|---------------|
-| OWNER | Todos                                              | ❌ (READ only)  | ✅             |
-| ADMIN | Todos, salvo que OWNER asigne lista específica     | ✅              | ✅             |
-| USER  | Exactamente 1 warehouse asignado                  | ❌ (READ only)  | ✅             |
+| Rol   | Warehouses (READ) | Warehouses (WRITE CRUD) | Receipts `findAll` | Editar warehouses de usuarios |
+|-------|--------------------|--------------------------|--------------------|-------------------------------|
+| OWNER | Todos              | ✅                        | Todas              | ✅ (ADMIN y USER)             |
+| ADMIN | Solo asociados     | ❌                        | Solo receipts con `origin` y `destiny` dentro de sus warehouses asociados | ✅ (solo usuarios con rol USER y solo warehouses asociados al ADMIN) |
+| USER  | Solo su warehouse  | ❌                        | Solo receipts con `destiny` = su warehouse asignado | ❌ |
 
-> El OWNER puede configurar los warehouses de un ADMIN mediante `PUT /users/editWarehouses`.
+> Para endpoints de warehouses usa `main_id=MOD_WAREHOUSES`.
 
 ## Endpoints de Usuarios
 
@@ -162,7 +162,8 @@ curl -X POST "http://localhost:8080/articles/register" \
 | POST   | /users/register       | `action=WRITE&main_id=MOD_USERS`           | Crear usuario                            |
 | PUT    | /users/edit           | `action=WRITE&main_id=MOD_USERS`           | Editar perfil (email, nickname, password)|
 | PUT    | /users/editRole       | `action=WRITE&main_id=MOD_USERS`           | Cambiar rol de usuario                   |
-| PUT    | /users/editWarehouses | `action=WRITE&main_id=MOD_USERS`           | Configurar warehouses de un usuario      |
+| PUT    | /users/editWarehouses | `action=WRITE&main_id=MOD_USERS`           | Configurar warehouses de un usuario (ADMIN solo USER y dentro de su alcance; OWNER sin restricción por rol) |
+| PUT    | /users/assignWarehouses | `action=WRITE&main_id=MOD_USERS`         | Alias explícito para asociación de warehouses a usuarios USER/ADMIN |
 | DELETE | /users/delete         | `action=WRITE&main_id=MOD_USERS`           | Eliminar usuario                         |
 
 ## Endpoints de Artículos
@@ -181,15 +182,26 @@ curl -X POST "http://localhost:8080/articles/register" \
 |--------|-------------------------------|--------------------------------------------|---------------------------------------------------|
 | POST   | /receipts/register            | `action=WRITE&main_id=MOD_RECEIPTS`        | Crear recibo                                      |
 | PUT    | /receipts/edit/{id}           | `action=WRITE&main_id=MOD_RECEIPTS`        | Editar recibo + loguea cambio de estado si cambia |
-| DELETE | /receipts/delete/{id}         | `action=WRITE&main_id=MOD_RECEIPTS`        | Eliminar recibo → registra en `receipt_status_history` con status=0 |
-| GET    | /receipts/findAll             | `action=READ&main_id=MOD_RECEIPTS`         | Listar recibos                                    |
+| DELETE | /receipts/delete/{id}         | `action=WRITE&main_id=MOD_RECEIPTS`        | Eliminar recibo → registra snapshot en `receipt_status_log` con status=0 |
+| GET    | /receipts/findAll             | `action=READ&main_id=MOD_RECEIPTS`         | Listar recibos con alcance por rol (USER/ADMIN/OWNER) |
 | GET    | /receipts/findByUserAndWarehouse | `action=READ&main_id=MOD_RECEIPTS`      | Listar por usuario y warehouse                    |
 | GET    | /receipts/history/{id}        | `action=READ&main_id=MOD_RECEIPTS`         | Historial de cambios de estado (`receipt_status_log`) |
 
 ### Auditoría de Recibos
 
+- **Creación**: se registra snapshot inicial en `receipt_status_log` (`previousStatus=null`, `newStatus=status inicial`).
 - **Cambio de estado**: cada modificación que cambia el status se registra en `receipt_status_log`.
-- **Eliminación**: al eliminar un recibo se registra en `receipt_status_history` con `status=0 (deleted)`, `user_id` y `user_email` del solicitante.
+- **Eliminación**: se registra snapshot final en `receipt_status_log` con `newStatus=0 (deleted)`, `user_id` y `user_email` del solicitante.
+
+## Endpoints de Warehouses
+
+| Método | Ruta                         | Query params requeridos                       | Descripción |
+|--------|------------------------------|-----------------------------------------------|-------------|
+| POST   | /warehouses/register         | `action=WRITE&main_id=MOD_WAREHOUSES`         | Crear warehouse (solo OWNER) |
+| PUT    | /warehouses/edit/{id}        | `action=WRITE&main_id=MOD_WAREHOUSES`         | Editar warehouse (solo OWNER) |
+| DELETE | /warehouses/delete/{id}      | `action=WRITE&main_id=MOD_WAREHOUSES`         | Eliminar warehouse (solo OWNER) |
+| GET    | /warehouses/findAll          | `action=READ&main_id=MOD_WAREHOUSES`          | Listar warehouses visibles según rol |
+| GET    | /warehouses/find/{id}        | `action=READ&main_id=MOD_WAREHOUSES`          | Obtener warehouse por id dentro de alcance |
 
 ## Endpoints de Reparaciones
 
@@ -234,8 +246,20 @@ examples/dev-local/bruno/
 │   ├── edit-article.json          PUT  /articles/edit/{id}
 │   └── delete-article.json        DELETE /articles/delete/{id}
 ├── receipts/
+│   ├── create-receipt.json        POST /receipts/register
+│   ├── edit-receipt-path-variable.json PUT /receipts/edit/{id}
+│   ├── edit-receipt-body.json     PUT /receipts/edit/{id}
+│   ├── find-by-user-and-warehouse.json GET /receipts/findByUserAndWarehouse
+│   ├── get-all-receipts.json      GET /receipts/findAll
 │   ├── owner-history-receipt.json GET /receipts/history/{id}  (OWNER)
 │   └── delete-receipt-path-variable.json DELETE /receipts/delete/{id}
+├── warehouses/
+│   ├── register-warehouse.json    POST /warehouses/register
+│   ├── edit-warehouse-path-variable.json PUT /warehouses/edit/{id}
+│   ├── edit-warehouse-body.json   PUT /warehouses/edit/{id}
+│   ├── delete-warehouse-path-variable.json DELETE /warehouses/delete/{id}
+│   ├── find-all-warehouses.json   GET /warehouses/findAll
+│   └── find-warehouse-by-id-path-variable.json GET /warehouses/find/{id}
 ├── repairs/
 │   ├── register-repair.json       POST /repairs/register
 │   ├── edit-repair.json           PUT  /repairs/edit/{id}

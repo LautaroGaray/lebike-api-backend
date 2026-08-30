@@ -1,0 +1,5 @@
+{
+  "warehouseId": 3,
+  "note": "Use with DELETE /warehouses/delete/{warehouseId}?action=WRITE&main_id=MOD_WAREHOUSES (OWNER only)"
+}
+

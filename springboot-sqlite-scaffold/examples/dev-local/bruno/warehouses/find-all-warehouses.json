@@ -1,0 +1,4 @@
+{
+  "note": "Use with GET /warehouses/findAll?action=READ&main_id=MOD_WAREHOUSES (USER/ADMIN/OWNER with role policy filtering)"
+}
+

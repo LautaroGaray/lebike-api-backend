@@ -13,12 +13,15 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 import javax.persistence.Version;
+import java.io.Serializable;
 
 @Entity
 @Table(name = "role_permissions", uniqueConstraints = {
     @UniqueConstraint(name = "UK_role_permissions_composite", columnNames = {"role_id", "module_id", "permission_id"})
 })
-public class RolePermissions {
+public class RolePermissions implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

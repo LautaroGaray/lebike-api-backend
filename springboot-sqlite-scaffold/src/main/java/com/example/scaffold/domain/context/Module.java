@@ -11,6 +11,7 @@ import javax.persistence.Table;
 import javax.persistence.Transient;
 import javax.persistence.UniqueConstraint;
 import javax.persistence.Version;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,7 +22,9 @@ import java.util.Map;
     @UniqueConstraint(name = "UK_modules_main_id", columnNames = "main_id"),
     @UniqueConstraint(name = "UK_modules_name", columnNames = "name")
 })
-public class Module {
+public class Module implements Serializable {
+
+	private static final long serialVersionUID = 1L;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

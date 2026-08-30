@@ -1,0 +1,6 @@
+{
+  "userId": 1,
+  "warehouseCode": "WH-002",
+  "note": "Use with GET /receipts/findByUserAndWarehouse?userId={userId}&warehouseCode={warehouseCode}"
+}
+

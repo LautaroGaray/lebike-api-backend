@@ -46,6 +46,11 @@ public class AuthController {
         }
 
         HttpSession session = request.getSession(true);
+		Object currentToken = session.getAttribute(TokenService.SESSION_TOKEN);
+		if (currentToken instanceof String) {
+			tokenService.invalidateToken((String) currentToken);
+		}
+		session.removeAttribute(TokenService.SESSION_TOKEN);
         String token = tokenService.getOrCreateToken(session, userFromDb.getId(), userFromDb.getRoleId(), userFromDb.getRoleName());
 
         ResponseData responseData = new ResponseData(new TokenResponse(token), true, "Login successful");

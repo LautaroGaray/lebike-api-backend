@@ -24,6 +24,12 @@ public class ReceiptJpaRepository implements ReceiptRepository {
     @Value("${repository.query.receipts.findByUserAndWarehouseOrderByIdDesc}")
     private String findByUserAndWarehouseOrderByIdDescQuery;
 
+    @Value("${repository.query.receipts.findByDestinyInOrderByIdDesc}")
+    private String findByDestinyInOrderByIdDescQuery;
+
+    @Value("${repository.query.receipts.findByOriginInAndDestinyInOrderByIdDesc}")
+    private String findByOriginInAndDestinyInOrderByIdDescQuery;
+
     @Value("${repository.query.receipts.existsByArticleIdAndStatusLessThan}")
     private String existsByArticleIdAndStatusLessThanQuery;
 
@@ -79,6 +85,25 @@ public class ReceiptJpaRepository implements ReceiptRepository {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Receipt> findByDestinyInOrderByIdDesc(List<String> warehouseCodes) {
+        return entityManager
+                .createQuery(findByDestinyInOrderByIdDescQuery, Receipt.class)
+                .setParameter("warehouseCodes", warehouseCodes)
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Receipt> findByOriginInAndDestinyInOrderByIdDesc(List<String> originWarehouseCodes, List<String> destinyWarehouseCodes) {
+        return entityManager
+                .createQuery(findByOriginInAndDestinyInOrderByIdDescQuery, Receipt.class)
+                .setParameter("originWarehouseCodes", originWarehouseCodes)
+                .setParameter("destinyWarehouseCodes", destinyWarehouseCodes)
+                .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public boolean existsByArticleIdAndStatusLessThan(Long articleId, Integer status) {
         Long count = entityManager
                 .createQuery(existsByArticleIdAndStatusLessThanQuery, Long.class)
@@ -88,5 +113,3 @@ public class ReceiptJpaRepository implements ReceiptRepository {
         return count != null && count > 0;
     }
 }
-
-

@@ -1,0 +1,13 @@
+{
+  "status": 55,
+  "details": [
+    {
+      "articleId": 3
+    },
+    {
+      "articleId": 4
+    }
+  ],
+  "note": "Use with PUT /receipts/edit/{receiptId}; only status change and append articles are supported"
+}
+

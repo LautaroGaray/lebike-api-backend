@@ -1,0 +1,18 @@
+{
+  "userId": 1,
+  "receiptKey": "RCP-2026-001",
+  "status": 1,
+  "origin": "WH-001",
+  "destiny": "WH-002",
+  "description": "Transfer of electronic components",
+  "details": [
+    {
+      "articleId": 1
+    },
+    {
+      "articleId": 2
+    }
+  ],
+  "note": "Use with POST /receipts/register"
+}
+

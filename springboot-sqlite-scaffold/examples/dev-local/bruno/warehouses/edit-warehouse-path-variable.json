@@ -1,0 +1,6 @@
+{
+  "warehouseId": 1,
+  "note": "Use with PUT /warehouses/edit/{warehouseId}?action=WRITE&main_id=MOD_WAREHOUSES (OWNER only)"
+}
+
+us

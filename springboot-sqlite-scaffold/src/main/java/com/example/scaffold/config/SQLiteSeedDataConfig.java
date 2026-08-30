@@ -35,10 +35,12 @@ public class SQLiteSeedDataConfig {
     private static final String RECEIPTS_MODULE_NAME = "Receipts";
     private static final String ARTICLES_MODULE_NAME = "Articles";
     private static final String REPAIRS_MODULE_NAME = "Repairs";
+    private static final String WAREHOUSES_MODULE_NAME = "Warehouses";
     private static final String USERS_MODULE_MAIN_ID = "MOD_USERS";
     private static final String RECEIPTS_MODULE_MAIN_ID = "MOD_RECEIPTS";
     private static final String ARTICLES_MODULE_MAIN_ID = "MOD_ARTICLES";
     private static final String REPAIRS_MODULE_MAIN_ID = "MOD_REPAIRS";
+    private static final String WAREHOUSES_MODULE_MAIN_ID = "MOD_WAREHOUSES";
     @Bean
     @Profile("local")
     public CommandLineRunner seedAdminUser(UserService userService,
@@ -63,6 +65,7 @@ public class SQLiteSeedDataConfig {
             Module receiptsModule = ensureModule(moduleRepository, RECEIPTS_MODULE_NAME, RECEIPTS_MODULE_MAIN_ID);
             Module articlesModule = ensureModule(moduleRepository, ARTICLES_MODULE_NAME, ARTICLES_MODULE_MAIN_ID);
             Module repairsModule = ensureModule(moduleRepository, REPAIRS_MODULE_NAME, REPAIRS_MODULE_MAIN_ID);
+            Module warehousesModule = ensureModule(moduleRepository, WAREHOUSES_MODULE_NAME, WAREHOUSES_MODULE_MAIN_ID);
             Permissions writePermission = ensurePermission(permissionRepository, WRITE_PERMISSION_CODE, "Write");
             Permissions readPermission = ensurePermission(permissionRepository, READ_PERMISSION_CODE, "Read");
 
@@ -95,6 +98,17 @@ public class SQLiteSeedDataConfig {
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, repairsModule, writePermission, true);
             ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, repairsModule, readPermission, true);
 
+            // Warehouses policy
+            // USER: read only own warehouses and destiny receipts from those warehouses (service-level filtering)
+            // ADMIN: read only associated warehouses, cannot modify warehouses
+            // OWNER: full CRUD
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, warehousesModule, writePermission, false);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.USER, warehousesModule, readPermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, warehousesModule, writePermission, false);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.ADMIN, warehousesModule, readPermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, warehousesModule, writePermission, true);
+            ensureRolePermission(roleRepository, rolePermissionsRepository, Role.OWNER, warehousesModule, readPermission, true);
+
             // Status catalog – status 0 is system-internal for deletion records
             ensureStatus(statusRepository, 0, "deleted");
             ensureStatus(statusRepository, 10, "new");
@@ -112,13 +126,15 @@ public class SQLiteSeedDataConfig {
             ensureWarehouse(warehouseRepository, "WH-002", "Ezpeleta");
             ensureWarehouse(warehouseRepository, "WH-003", "Bernal");
 
-            Long adminId = userService.findByEmailDb("admin@local").map(com.example.scaffold.domain.auths.Users::getId).orElse(null);
-            if (adminId != null) {
-                userService.updateAllowedWarehouses(adminId, java.util.Collections.emptyList());
-            }
-
             Long userId = userService.findByEmailDb("user1@local").map(com.example.scaffold.domain.auths.Users::getId).orElse(null);
             Long wh1Id = warehouseRepository.findByCode("WH-001").map(com.example.scaffold.domain.inventory.Warehouse::getId).orElse(null);
+            Long wh2Id = warehouseRepository.findByCode("WH-002").map(com.example.scaffold.domain.inventory.Warehouse::getId).orElse(null);
+
+            Long adminId = userService.findByEmailDb("admin@local").map(com.example.scaffold.domain.auths.Users::getId).orElse(null);
+            if (adminId != null && wh1Id != null && wh2Id != null) {
+                userService.updateAllowedWarehouses(adminId, java.util.Arrays.asList(wh1Id, wh2Id));
+            }
+
             if (userId != null && wh1Id != null) {
                 userService.updateAllowedWarehouses(userId, java.util.Collections.singletonList(wh1Id));
             }
@@ -282,4 +298,3 @@ public class SQLiteSeedDataConfig {
         rolePermissionsRepository.save(rolePermission);
     }
 }
-

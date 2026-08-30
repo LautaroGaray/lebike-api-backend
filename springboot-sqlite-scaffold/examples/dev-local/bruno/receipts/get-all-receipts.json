@@ -1,0 +1,4 @@
+{
+  "note": "Use with GET /receipts/findAll?action=READ&main_id=MOD_RECEIPTS; USER sees destiny in own warehouse, ADMIN sees origin+destiny in associated warehouses, OWNER sees all"
+}
+
