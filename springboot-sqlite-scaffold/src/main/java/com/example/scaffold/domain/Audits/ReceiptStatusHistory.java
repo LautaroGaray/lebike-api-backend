@@ -19,6 +19,9 @@ public class ReceiptStatusHistory {
     @Column(name = "receipt_id", nullable = false)
     private Long receiptId;
 
+    @Column(name="receipt_key")
+    private String receiptKey;
+
     @Column(nullable = false)
     private Integer status;
 

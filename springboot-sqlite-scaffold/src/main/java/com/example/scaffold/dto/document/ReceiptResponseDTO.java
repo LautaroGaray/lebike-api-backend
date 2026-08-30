@@ -13,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 public class ReceiptResponseDTO {
     private Long id;
+    private String receiptKey;
     private Integer status;
     private String statusDescription;
     private String origin;

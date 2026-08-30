@@ -12,6 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 public class ReceiptCreateRequestDTO {
     private Long userId;
+    private String receiptKey;
     private Integer status;
     private String origin;
     private String destiny;

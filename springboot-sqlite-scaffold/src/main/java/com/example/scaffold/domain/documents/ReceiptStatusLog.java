@@ -20,6 +20,9 @@ public class ReceiptStatusLog {
     @Column(name = "receipt_id", nullable = false)
     private Long receiptId;
 
+    @Column(name = "receipt_key")
+    private String receiptKey;
+
     @Column(name = "previous_status")
     private Integer previousStatus;
 

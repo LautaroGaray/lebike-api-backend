@@ -2,6 +2,7 @@ package com.example.scaffold.service.document;
 
 import com.example.scaffold.domain.Audits.ReceiptStatusHistory;
 import com.example.scaffold.domain.auths.Users;
+import com.example.scaffold.domain.documents.DocumentsEnum;
 import com.example.scaffold.domain.documents.Receipt;
 import com.example.scaffold.domain.documents.ReceiptDetail;
 import com.example.scaffold.domain.documents.ReceiptStatusLog;
@@ -17,9 +18,11 @@ import com.example.scaffold.repository.ReceiptStatusHistoryRepository;
 import com.example.scaffold.repository.ReceiptStatusLogRepository;
 import com.example.scaffold.repository.StatusRepository;
 import com.example.scaffold.repository.UserRepository;
+import com.example.scaffold.util.KeyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -36,6 +39,7 @@ public class ReceiptService {
 	private final ReceiptStatusLogRepository receiptStatusLogRepository;
 	private final ReceiptStatusHistoryRepository receiptStatusHistoryRepository;
 	private final StatusRepository statusRepository;
+	private final KeyService keyService;
 
 	public static final int DELETED_STATUS = 0;
 
@@ -44,19 +48,22 @@ public class ReceiptService {
 						  ArticleRepository articleRepository,
 						  ReceiptStatusLogRepository receiptStatusLogRepository,
 						  ReceiptStatusHistoryRepository receiptStatusHistoryRepository,
-						  StatusRepository statusRepository) {
+						  StatusRepository statusRepository,
+						  KeyService keyService) {
 		this.receiptRepository = receiptRepository;
 		this.userRepository = userRepository;
 		this.articleRepository = articleRepository;
 		this.receiptStatusLogRepository = receiptStatusLogRepository;
 		this.receiptStatusHistoryRepository = receiptStatusHistoryRepository;
 		this.statusRepository = statusRepository;
+		this.keyService = keyService;
 	}
 
 	public ReceiptResponseDTO createReceiptWithDetails(ReceiptCreateRequestDTO request) {
 		Users user = userRepository.findById(request.getUserId()).orElseThrow(() -> new IllegalArgumentException("User not found"));
 
 		Receipt receipt = new Receipt();
+		receipt.setReceiptKey(StringUtils.hasText(request.getReceiptKey()) ? request.getReceiptKey().trim() : keyService.getKey(DocumentsEnum.RECEIPT, null).getCompletKey());
 		receipt.setStatus(request.getStatus());
 		receipt.setOrigin(request.getOrigin().trim());
 		receipt.setDestiny(request.getDestiny().trim());
@@ -127,6 +134,7 @@ public class ReceiptService {
 		// Log deletion in ReceiptStatusHistory before removing the record
 		ReceiptStatusHistory history = new ReceiptStatusHistory();
 		history.setReceiptId(receipt.getId());
+		history.setReceiptKey(receipt.getReceiptKey());
 		history.setStatus(DELETED_STATUS);
 		history.setDescription("Receipt deleted");
 		history.setUserId(requesterId);
@@ -145,6 +153,7 @@ public class ReceiptService {
 		}
 
 		ReceiptStatusLog statusLog = new ReceiptStatusLog();
+		statusLog.setReceiptKey(receipt.getReceiptKey());
 		statusLog.setReceiptId(receipt.getId());
 		statusLog.setPreviousStatus(previousStatus);
 		statusLog.setNewStatus(newStatus);
@@ -201,6 +210,7 @@ public class ReceiptService {
 		ReceiptResponseDTO dto = new ReceiptResponseDTO();
 		dto.setId(receipt.getId());
 		dto.setStatus(receipt.getStatus());
+		dto.setReceiptKey(receipt.getReceiptKey());
 		dto.setStatusDescription(statusRepository.findByStatus(receipt.getStatus())
 				.map(status -> status.getDescription())
 				.orElse(null));
@@ -241,6 +251,7 @@ public class ReceiptService {
 		ReceiptStatusLogResponseDTO dto = new ReceiptStatusLogResponseDTO();
 		dto.setId(log.getId());
 		dto.setReceiptId(log.getReceiptId());
+		dto.setReceiptKey(log.getReceiptKey());
 		dto.setPreviousStatus(log.getPreviousStatus());
 		dto.setPreviousStatusDescription(log.getPreviousStatus() == null
 				? null

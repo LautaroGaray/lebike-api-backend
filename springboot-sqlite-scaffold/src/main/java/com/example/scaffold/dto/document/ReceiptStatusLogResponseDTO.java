@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class ReceiptStatusLogResponseDTO {
     private Long id;
     private Long receiptId;
+    private String receiptKey;
     private Integer previousStatus;
     private String previousStatusDescription;
     private Integer newStatus;

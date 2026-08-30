@@ -20,6 +20,9 @@ public class Receipt {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long Id;
 
+    @Column(unique = true, name = "receiptKey")
+    private String receiptKey;
+
     @Column(name = "status", nullable = false)
     private Integer status;
 
