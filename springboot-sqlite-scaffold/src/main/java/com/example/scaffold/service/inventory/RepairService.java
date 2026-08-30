@@ -67,9 +67,6 @@ public class RepairService {
         if (request.getArticleId() != null) {
             article = articleRepository.findById(request.getArticleId())
                     .orElseThrow(() -> new IllegalArgumentException("Article not found"));
-            if (!article.isActive()) {
-                throw new IllegalArgumentException("Article is inactive");
-            }
         }
 
         Repair repair = new Repair();
@@ -103,9 +100,6 @@ public class RepairService {
         if (request.getArticleId() != null) {
             article = articleRepository.findById(request.getArticleId())
                     .orElseThrow(() -> new IllegalArgumentException("Article not found"));
-            if (!article.isActive()) {
-                throw new IllegalArgumentException("Article is inactive");
-            }
         }
 
         repair.setStatus(request.getStatus());

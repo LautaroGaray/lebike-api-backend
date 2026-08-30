@@ -130,7 +130,7 @@ Ejemplo `WRITE`:
 curl -X POST "http://localhost:8080/articles/register?action=WRITE&main_id=MOD_ARTICLES" \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"sku":"ART-0100","name":"Disc Brake Rotor","type":"SPARE","supplier":"Contoso","purchasePrice":44.50,"salePrice":69.90,"active":true}'
+  -d '{"sku":"ART-0100","name":"Disc Brake Rotor","type":"SPARE","supplier":"Contoso","purchasePrice":44.50,"salePrice":69.90}'
 ```
 
 Ejemplo equivalente con headers:
@@ -141,7 +141,7 @@ curl -X POST "http://localhost:8080/articles/register" \
   -H "X-Action: WRITE" \
   -H "X-Module-Main-Id: MOD_ARTICLES" \
   -H "Content-Type: application/json" \
-  -d '{"sku":"ART-0100","name":"Disc Brake Rotor","type":"SPARE","supplier":"Contoso","purchasePrice":44.50,"salePrice":69.90,"active":true}'
+  -d '{"sku":"ART-0100","name":"Disc Brake Rotor","type":"SPARE","supplier":"Contoso","purchasePrice":44.50,"salePrice":69.90}'
 ```
 
 ## Política de Roles y Warehouses
@@ -171,9 +171,9 @@ curl -X POST "http://localhost:8080/articles/register" \
 |--------|-------------------------|--------------------------------------------|---------------------|
 | POST   | /articles/register      | `action=WRITE&main_id=MOD_ARTICLES`        | Crear artículo      |
 | PUT    | /articles/edit/{id}     | `action=WRITE&main_id=MOD_ARTICLES`        | Editar artículo     |
-| DELETE | /articles/delete/{id}   | `action=WRITE&main_id=MOD_ARTICLES`        | Eliminar (soft delete) artículo |
+| DELETE | /articles/delete/{id}   | `action=WRITE&main_id=MOD_ARTICLES`        | Eliminar artículo (hard delete con validación de recibos) |
 
-> La eliminación de artículos es lógica (soft delete) para preservar referencias históricas en recibos.
+> Un artículo solo se elimina si no está referenciado por recibos con estado menor a `receipt` (110).
 
 ## Endpoints de Recibos
 
@@ -181,7 +181,7 @@ curl -X POST "http://localhost:8080/articles/register" \
 |--------|-------------------------------|--------------------------------------------|---------------------------------------------------|
 | POST   | /receipts/register            | `action=WRITE&main_id=MOD_RECEIPTS`        | Crear recibo                                      |
 | PUT    | /receipts/edit/{id}           | `action=WRITE&main_id=MOD_RECEIPTS`        | Editar recibo + loguea cambio de estado si cambia |
-| DELETE | /receipts/delete/{id}         | `action=WRITE&main_id=MOD_RECEIPTS`        | Eliminar recibo → registra en `receipt_status_histpry` con status=0 |
+| DELETE | /receipts/delete/{id}         | `action=WRITE&main_id=MOD_RECEIPTS`        | Eliminar recibo → registra en `receipt_status_history` con status=0 |
 | GET    | /receipts/findAll             | `action=READ&main_id=MOD_RECEIPTS`         | Listar recibos                                    |
 | GET    | /receipts/findByUserAndWarehouse | `action=READ&main_id=MOD_RECEIPTS`      | Listar por usuario y warehouse                    |
 | GET    | /receipts/history/{id}        | `action=READ&main_id=MOD_RECEIPTS`         | Historial de cambios de estado (`receipt_status_log`) |
@@ -189,7 +189,7 @@ curl -X POST "http://localhost:8080/articles/register" \
 ### Auditoría de Recibos
 
 - **Cambio de estado**: cada modificación que cambia el status se registra en `receipt_status_log`.
-- **Eliminación**: al eliminar un recibo se registra en `receipt_status_histpry` con `status=0 (deleted)`, `user_id` y `user_email` del solicitante.
+- **Eliminación**: al eliminar un recibo se registra en `receipt_status_history` con `status=0 (deleted)`, `user_id` y `user_email` del solicitante.
 
 ## Endpoints de Reparaciones
 

@@ -42,7 +42,47 @@ CREATE INDEX IF NOT EXISTS idx_repair_status ON repair(status);
 CREATE INDEX IF NOT EXISTS idx_repair_audit_repair_id ON repair_audit(repair_id);
 CREATE INDEX IF NOT EXISTS idx_repair_audit_user_id ON repair_audit(user_id);
 
+-- Status seed catalog (idempotent)
+INSERT INTO status (status, description) VALUES (0, 'deleted')
+ON CONFLICT(status) DO UPDATE SET description = excluded.description;
+INSERT INTO status (status, description) VALUES (10, 'new')
+ON CONFLICT(status) DO UPDATE SET description = excluded.description;
+INSERT INTO status (status, description) VALUES (55, 'on preparation')
+ON CONFLICT(status) DO UPDATE SET description = excluded.description;
+INSERT INTO status (status, description) VALUES (75, 'ready to dispatched')
+ON CONFLICT(status) DO UPDATE SET description = excluded.description;
+INSERT INTO status (status, description) VALUES (95, 'dispatched')
+ON CONFLICT(status) DO UPDATE SET description = excluded.description;
+INSERT INTO status (status, description) VALUES (110, 'receipt')
+ON CONFLICT(status) DO UPDATE SET description = excluded.description;
+
+-- Document key seed catalog (idempotent)
+INSERT INTO "key" (incremental_key, incremental_letter_key, prefix, target_destiny)
+VALUES (0, 'AAAA', 'RCP', 'RECEIPT')
+ON CONFLICT(target_destiny) DO UPDATE SET
+	prefix = excluded.prefix,
+	incremental_key = "key".incremental_key,
+	incremental_letter_key = "key".incremental_letter_key;
+INSERT INTO "key" (incremental_key, incremental_letter_key, prefix, target_destiny)
+VALUES (0, 'AAAA', 'ART', 'ARTICLE')
+ON CONFLICT(target_destiny) DO UPDATE SET
+	prefix = excluded.prefix,
+	incremental_key = "key".incremental_key,
+	incremental_letter_key = "key".incremental_letter_key;
+INSERT INTO "key" (incremental_key, incremental_letter_key, prefix, target_destiny)
+VALUES (0, 'AAAA', 'ORD', 'ORDER')
+ON CONFLICT(target_destiny) DO UPDATE SET
+	prefix = excluded.prefix,
+	incremental_key = "key".incremental_key,
+	incremental_letter_key = "key".incremental_letter_key;
+INSERT INTO "key" (incremental_key, incremental_letter_key, prefix, target_destiny)
+VALUES (0, 'AAAA', 'RPR', 'REPAIR')
+ON CONFLICT(target_destiny) DO UPDATE SET
+	prefix = excluded.prefix,
+	incremental_key = "key".incremental_key,
+	incremental_letter_key = "key".incremental_letter_key;
+
 -- ReceiptStatusHistory indexes
-CREATE INDEX IF NOT EXISTS idx_receipt_status_histpry_receipt_id ON receipt_status_histpry(receipt_id);
+CREATE INDEX IF NOT EXISTS idx_receipt_status_history_receipt_id ON receipt_status_history(receipt_id);
 
 

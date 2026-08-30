@@ -26,6 +26,9 @@ public class Article {
     @Column(name="sku", nullable = false, unique = true)
     private String sku;
 
+    @Column(name="external_sku", unique = true)
+    private String externalSku;
+
     @Column(name="name", nullable = false)
     private String name;
 
@@ -41,7 +44,5 @@ public class Article {
     @Column(name="sale_price", precision = 12, scale = 12, nullable = false)
     private BigDecimal salePrice;
 
-    @Column(name="active", nullable= false)
-    private boolean active;
 
 }

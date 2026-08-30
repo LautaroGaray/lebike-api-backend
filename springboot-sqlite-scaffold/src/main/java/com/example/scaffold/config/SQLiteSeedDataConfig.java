@@ -2,13 +2,16 @@ package com.example.scaffold.config;
 
 import com.example.scaffold.domain.context.Module;
 import com.example.scaffold.domain.context.Status;
+import com.example.scaffold.domain.Audits.Keys;
 import com.example.scaffold.domain.auths.Permissions;
 import com.example.scaffold.domain.auths.Role;
 import com.example.scaffold.domain.auths.RolePermissions;
+import com.example.scaffold.domain.documents.DocumentsEnum;
 import com.example.scaffold.domain.inventory.Article;
 import com.example.scaffold.domain.inventory.Warehouse;
 import com.example.scaffold.dto.auth.UserDTO;
 import com.example.scaffold.repository.ArticleRepository;
+import com.example.scaffold.repository.KeyRepository;
 import com.example.scaffold.repository.ModuleRepository;
 import com.example.scaffold.repository.PermissionRepository;
 import com.example.scaffold.repository.RoleRepository;
@@ -44,6 +47,7 @@ public class SQLiteSeedDataConfig {
                                            PermissionRepository permissionRepository,
                                            RolePermissionsRepository rolePermissionsRepository,
                                            StatusRepository statusRepository,
+                                           KeyRepository keyRepository,
                                             ArticleRepository articleRepository,
                                             WarehouseRepository warehouseRepository) {
         return args -> {
@@ -98,6 +102,11 @@ public class SQLiteSeedDataConfig {
             ensureStatus(statusRepository, 75, "ready to dispatched");
             ensureStatus(statusRepository, 95, "dispatched");
             ensureStatus(statusRepository, 110, "receipt");
+
+            ensureKey(keyRepository, DocumentsEnum.RECEIPT, "RCP");
+            ensureKey(keyRepository, DocumentsEnum.ARTICLE, "ART");
+            ensureKey(keyRepository, DocumentsEnum.ORDER, "ORD");
+            ensureKey(keyRepository, DocumentsEnum.REPAIR, "RPR");
 
             ensureWarehouse(warehouseRepository, "WH-001", "Berazategui");
             ensureWarehouse(warehouseRepository, "WH-002", "Ezpeleta");
@@ -158,6 +167,28 @@ public class SQLiteSeedDataConfig {
         warehouseRepository.save(warehouse);
     }
 
+    private void ensureKey(KeyRepository keyRepository, DocumentsEnum document, String prefix) {
+        Keys existing = keyRepository.findByTargetDestiny(document.getTargetDestiny()).orElse(null);
+        if (existing != null) {
+            existing.setPrefix(prefix);
+            if (existing.getIncrementaNumberKey() == null || existing.getIncrementaNumberKey() < 0 || existing.getIncrementaNumberKey() > 9999999) {
+                existing.setIncrementaNumberKey(0);
+            }
+            if (existing.getIncrementalLetterKey() == null || existing.getIncrementalLetterKey().trim().length() != 4) {
+                existing.setIncrementalLetterKey("AAAA");
+            }
+            keyRepository.save(existing);
+            return;
+        }
+
+        Keys key = new Keys();
+        key.setPrefix(prefix);
+        key.setTargetDestiny(document.getTargetDestiny());
+        key.setIncrementaNumberKey(0);
+        key.setIncrementalLetterKey("AAAA");
+        keyRepository.save(key);
+    }
+
     private void ensureArticle(ArticleRepository articleRepository,
                                String sku,
                                String name,
@@ -167,10 +198,6 @@ public class SQLiteSeedDataConfig {
                                String salePrice) {
         Article existing = articleRepository.findBySku(sku).orElse(null);
         if (existing != null) {
-            if (!existing.isActive()) {
-                existing.setActive(true);
-                articleRepository.save(existing);
-            }
             return;
         }
 
@@ -181,7 +208,6 @@ public class SQLiteSeedDataConfig {
         article.setSupplier(supplier);
         article.setPurchasePrice(new BigDecimal(purchasePrice));
         article.setSalePrice(new BigDecimal(salePrice));
-        article.setActive(true);
         articleRepository.save(article);
     }
 

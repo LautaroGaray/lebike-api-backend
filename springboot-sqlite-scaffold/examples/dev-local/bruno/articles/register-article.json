@@ -4,7 +4,6 @@
   "type": "SPARE",
   "supplier": "Contoso",
   "purchasePrice": 44.50,
-  "salePrice": 69.90,
-  "active": true
+  "salePrice": 69.90
 }
 

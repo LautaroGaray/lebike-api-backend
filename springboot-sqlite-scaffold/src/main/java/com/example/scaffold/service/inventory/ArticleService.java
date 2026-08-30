@@ -1,9 +1,12 @@
 package com.example.scaffold.service.inventory;
 
+import com.example.scaffold.domain.documents.DocumentsEnum;
 import com.example.scaffold.domain.inventory.Article;
 import com.example.scaffold.dto.inventory.ArticleRequestDTO;
 import com.example.scaffold.dto.inventory.ArticleResponseDTO;
 import com.example.scaffold.repository.ArticleRepository;
+import com.example.scaffold.repository.ReceiptRepository;
+import com.example.scaffold.util.KeyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,15 +18,38 @@ import java.util.Objects;
 @Transactional(isolation = Isolation.READ_COMMITTED)
 public class ArticleService {
 
-    private final ArticleRepository articleRepository;
+    private static final int RECEIVED_STATUS = 110;
 
-    public ArticleService(ArticleRepository articleRepository) {
+    private final ArticleRepository articleRepository;
+    private final ReceiptRepository receiptRepository;
+    private final KeyService keyService;
+
+    public ArticleService(ArticleRepository articleRepository, ReceiptRepository receiptRepository, KeyService keyService) {
         this.articleRepository = articleRepository;
+        this.receiptRepository = receiptRepository;
+        this.keyService = keyService;
     }
 
+    public ArticleResponseDTO findByCriteria(boolean externalSku, ArticleRequestDTO request){
+        if(externalSku && !StringUtils.hasText(request.getExternalSku())){
+            throw  new IllegalArgumentException("externalSku is required");
+        }else if(!externalSku && !StringUtils.hasText(request.getSku())){
+            throw new IllegalArgumentException("sku is required");
+        }
+
+        String normalizedSku = externalSku ? request.getExternalSku().trim().toUpperCase(): request.getSku().trim().toUpperCase();
+
+        Article article = externalSku ? articleRepository.findByExternalSku(normalizedSku).orElse(null) : articleRepository.findBySku(normalizedSku).orElse(null);
+        if(article == null) {
+            throw new IllegalArgumentException("Article not found");
+        }
+
+        return toDto(article);
+    }
     public ArticleResponseDTO create(ArticleRequestDTO request) {
         validateCreateRequest(request);
 
+        String sku = StringUtils.hasText(request.getSku()) ? request.getSku() : keyService.getKey(DocumentsEnum.ARTICLE, null).getCompletKey();
         String normalizedSku = request.getSku().trim().toUpperCase();
         if (articleRepository.findBySku(normalizedSku).isPresent()) {
             throw new IllegalArgumentException("Article with this sku already exists");
@@ -31,12 +57,12 @@ public class ArticleService {
 
         Article article = new Article();
         article.setSku(normalizedSku);
+        article.setExternalSku(normalizeNullableText(request.getExternalSku()));
         article.setName(request.getName().trim());
         article.setType(normalizeNullableText(request.getType()));
         article.setSupplier(normalizeNullableText(request.getSupplier()));
         article.setPurchasePrice(request.getPurchasePrice());
         article.setSalePrice(request.getSalePrice());
-        article.setActive(request.getActive() == null || request.getActive());
 
         return toDto(articleRepository.save(article));
     }
@@ -61,6 +87,15 @@ public class ArticleService {
             article.setSku(normalizedSku);
         }
 
+        if(StringUtils.hasText(request.getExternalSku())) {
+            String normalizedExternalSku = request.getExternalSku().trim().toUpperCase();
+            Article existingByExternalSku = articleRepository.findByExternalSku(normalizedExternalSku).orElse(null);
+            if (existingByExternalSku != null && !Objects.equals(existingByExternalSku.getId(), article.getId())) {
+                throw new IllegalArgumentException("Article with this external sku already exists");
+            }
+            article.setExternalSku(normalizedExternalSku);
+        }
+
         if (StringUtils.hasText(request.getName())) {
             article.setName(request.getName().trim());
         }
@@ -76,9 +111,6 @@ public class ArticleService {
         if (request.getSalePrice() != null) {
             article.setSalePrice(request.getSalePrice());
         }
-        if (request.getActive() != null) {
-            article.setActive(request.getActive());
-        }
 
         return toDto(articleRepository.save(article));
     }
@@ -91,17 +123,17 @@ public class ArticleService {
         Article article = articleRepository.findById(articleId)
                 .orElseThrow(() -> new IllegalArgumentException("Article not found"));
 
-        // Soft delete to preserve historical references from receipt details.
-        article.setActive(false);
-        articleRepository.save(article);
+        boolean linkedToOpenReceipts = receiptRepository.existsByArticleIdAndStatusLessThan(articleId, RECEIVED_STATUS);
+        if (linkedToOpenReceipts) {
+            throw new IllegalArgumentException("Cannot delete article: it is referenced by receipts not yet received");
+        }
+
+        articleRepository.deleteById(article.getId());
     }
 
     private void validateCreateRequest(ArticleRequestDTO request) {
         if (request == null) {
             throw new IllegalArgumentException("Request body is required");
-        }
-        if (!StringUtils.hasText(request.getSku())) {
-            throw new IllegalArgumentException("sku is required");
         }
         if (!StringUtils.hasText(request.getName())) {
             throw new IllegalArgumentException("name is required");
@@ -125,12 +157,12 @@ public class ArticleService {
         ArticleResponseDTO dto = new ArticleResponseDTO();
         dto.setId(article.getId());
         dto.setSku(article.getSku());
+        dto.setExternalSku(article.getExternalSku());
         dto.setName(article.getName());
         dto.setType(article.getType());
         dto.setSupplier(article.getSupplier());
         dto.setPurchasePrice(article.getPurchasePrice());
         dto.setSalePrice(article.getSalePrice());
-        dto.setActive(article.isActive());
         return dto;
     }
 }

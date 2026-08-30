@@ -24,6 +24,9 @@ public class ReceiptJpaRepository implements ReceiptRepository {
     @Value("${repository.query.receipts.findByUserAndWarehouseOrderByIdDesc}")
     private String findByUserAndWarehouseOrderByIdDescQuery;
 
+    @Value("${repository.query.receipts.existsByArticleIdAndStatusLessThan}")
+    private String existsByArticleIdAndStatusLessThanQuery;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -72,6 +75,17 @@ public class ReceiptJpaRepository implements ReceiptRepository {
                 .setParameter("userId", userId)
                 .setParameter("warehouseCode", warehouseCode)
                 .getResultList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean existsByArticleIdAndStatusLessThan(Long articleId, Integer status) {
+        Long count = entityManager
+                .createQuery(existsByArticleIdAndStatusLessThanQuery, Long.class)
+                .setParameter("articleId", articleId)
+                .setParameter("status", status)
+                .getSingleResult();
+        return count != null && count > 0;
     }
 }
 

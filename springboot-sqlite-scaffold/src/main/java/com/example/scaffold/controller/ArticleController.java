@@ -17,6 +17,17 @@ public class ArticleController {
         this.articleService = articleService;
     }
 
+    @GetMapping("/article/{isExternalSku}")
+    public ResponseEntity<ResponseData> findArticleByCriteria(@PathVariable boolean isExternalSku, @RequestBody ArticleRequestDTO req){
+        try{
+
+            ArticleResponseDTO response = articleService.findByCriteria(isExternalSku, req);
+            return ResponseEntity.ok(new ResponseData(response, true, "Article found successfully"));
+        }catch (IllegalArgumentException ex){
+            return ResponseEntity.badRequest().body(new ResponseData(null, false, "Article not found"));
+        }
+    }
+
     @PostMapping("/register")
     public ResponseEntity<ResponseData> register(@RequestBody ArticleRequestDTO request) {
         try {

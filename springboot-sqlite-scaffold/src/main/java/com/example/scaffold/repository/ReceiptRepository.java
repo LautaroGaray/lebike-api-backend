@@ -8,4 +8,6 @@ public interface ReceiptRepository extends IRepository<Receipt, Long> {
 	List<Receipt> findAllOrderByIdDesc();
 
 	List<Receipt> findByUserAndWarehouseOrderByIdDesc(Long userId, String warehouseCode);
+
+	boolean existsByArticleIdAndStatusLessThan(Long articleId, Integer status);
 }

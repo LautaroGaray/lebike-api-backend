@@ -11,11 +11,11 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class ArticleRequestDTO {
     private String sku;
+    private String externalSku;
     private String name;
     private String type;
     private String supplier;
     private BigDecimal purchasePrice;
     private BigDecimal salePrice;
-    private Boolean active;
 }
 
