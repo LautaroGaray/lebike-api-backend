@@ -28,10 +28,11 @@ public class ReceiptController {
     @PostMapping("/register")
     public ResponseEntity<ResponseData> register(@RequestBody ReceiptCreateRequestDTO request) {
         try {
-            ReceiptResponseDTO created = receiptService.createReceiptWithDetails(request);
+            Long requesterId = authorizationService.getRequesterUserId();
+            ReceiptResponseDTO created = receiptService.createReceiptWithDetails(request, requesterId);
             return ResponseEntity.ok(new ResponseData(created, true, "Receipt created successfully"));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(new ResponseData(null, false, ex.getMessage()));
+            return toReceiptErrorResponse(ex);
         }
     }
 
@@ -39,14 +40,11 @@ public class ReceiptController {
     public ResponseEntity<ResponseData> edit(@PathVariable Long receiptId,
                                              @RequestBody ReceiptUpdateRequestDTO request) {
         try {
-            ReceiptResponseDTO updated = receiptService.updateReceiptWithDetails(receiptId, request);
+            Long requesterId = authorizationService.getRequesterUserId();
+            ReceiptResponseDTO updated = receiptService.updateReceiptWithDetails(receiptId, request, requesterId);
             return ResponseEntity.ok(new ResponseData(updated, true, "Receipt updated successfully"));
         } catch (IllegalArgumentException ex) {
-            String message = ex.getMessage();
-            if ("Receipt not found".equals(message)) {
-                return ResponseEntity.status(404).body(new ResponseData(null, false, message));
-            }
-            return ResponseEntity.badRequest().body(new ResponseData(null, false, message));
+            return toReceiptErrorResponse(ex);
         }
     }
 
@@ -56,7 +54,7 @@ public class ReceiptController {
             receiptService.deleteReceipt(receiptId, authorizationService.getRequesterUserId());
             return ResponseEntity.ok(new ResponseData(null, true, "Receipt deleted successfully"));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(404).body(new ResponseData(null, false, ex.getMessage()));
+            return toReceiptErrorResponse(ex);
         }
     }
 
@@ -64,20 +62,22 @@ public class ReceiptController {
     public ResponseEntity<ResponseData> findByUserAndWarehouse(@RequestParam Long userId,
                                                                @RequestParam String warehouseCode) {
         try {
-            List<ReceiptResponseDTO> receipts = receiptService.findByUserAndWarehouse(userId, warehouseCode);
+            Long requesterId = authorizationService.getRequesterUserId();
+            List<ReceiptResponseDTO> receipts = receiptService.findByUserAndWarehouse(userId, warehouseCode, requesterId);
             return ResponseEntity.ok(new ResponseData(receipts, true, "Receipts retrieved successfully"));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.badRequest().body(new ResponseData(null, false, ex.getMessage()));
+            return toReceiptErrorResponse(ex);
         }
     }
 
     @GetMapping("/history/{receiptId}")
     public ResponseEntity<ResponseData> history(@PathVariable Long receiptId) {
         try {
-            List<ReceiptStatusLogResponseDTO> history = receiptService.findStatusHistory(receiptId);
+            Long requesterId = authorizationService.getRequesterUserId();
+            List<ReceiptStatusLogResponseDTO> history = receiptService.findStatusHistory(receiptId, requesterId);
             return ResponseEntity.ok(new ResponseData(history, true, "Receipt history retrieved successfully"));
         } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(404).body(new ResponseData(null, false, ex.getMessage()));
+            return toReceiptErrorResponse(ex);
         }
     }
 
@@ -91,11 +91,21 @@ public class ReceiptController {
 			List<ReceiptResponseDTO> receipts = receiptService.findAll(requesterId);
 			return ResponseEntity.ok(new ResponseData(receipts, true, "Receipts retrieved successfully"));
 		} catch (IllegalArgumentException ex) {
-			String message = ex.getMessage();
-			if ("Requester user not found".equals(message)) {
-				return ResponseEntity.status(404).body(new ResponseData(null, false, message));
-			}
-			return ResponseEntity.badRequest().body(new ResponseData(null, false, message));
+			return toReceiptErrorResponse(ex);
 		}
      }
- }
+
+	 private ResponseEntity<ResponseData> toReceiptErrorResponse(IllegalArgumentException ex) {
+		String message = ex.getMessage() == null ? "Invalid receipt request" : ex.getMessage();
+		if ("Requester user is not authenticated".equals(message)) {
+			return ResponseEntity.status(401).body(new ResponseData(null, false, message));
+		}
+		if ("Requester user not found".equals(message) || "Receipt not found".equals(message)) {
+			return ResponseEntity.status(404).body(new ResponseData(null, false, message));
+		}
+		if ("Receipt access denied for requester scope".equals(message)) {
+			return ResponseEntity.status(403).body(new ResponseData(null, false, message));
+		}
+		return ResponseEntity.badRequest().body(new ResponseData(null, false, message));
+	 }
+  }

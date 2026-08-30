@@ -1,13 +1,11 @@
 package com.example.scaffold.service.document;
 
 import com.example.scaffold.domain.auths.Users;
-import com.example.scaffold.domain.auths.Role;
 import com.example.scaffold.domain.documents.DocumentsEnum;
 import com.example.scaffold.domain.documents.Receipt;
 import com.example.scaffold.domain.documents.ReceiptDetail;
 import com.example.scaffold.domain.documents.ReceiptStatusLog;
 import com.example.scaffold.domain.inventory.Article;
-import com.example.scaffold.domain.inventory.Warehouse;
 import com.example.scaffold.dto.document.ReceiptCreateRequestDTO;
 import com.example.scaffold.dto.document.ReceiptDetailCreateRequestDTO;
 import com.example.scaffold.dto.document.ReceiptDetailResponseDTO;
@@ -20,6 +18,7 @@ import com.example.scaffold.repository.ReceiptStatusLogRepository;
 import com.example.scaffold.repository.StatusRepository;
 import com.example.scaffold.repository.UserRepository;
 import com.example.scaffold.repository.WarehouseRepository;
+import com.example.scaffold.service.auths.DocumentWarehouseScopeService;
 import com.example.scaffold.util.KeyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
@@ -28,9 +27,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 
 @Service
@@ -43,6 +40,7 @@ public class ReceiptService {
 	private final ReceiptStatusLogRepository receiptStatusLogRepository;
 	private final StatusRepository statusRepository;
 	private final WarehouseRepository warehouseRepository;
+	private final DocumentWarehouseScopeService documentWarehouseScopeService;
 	private final KeyService keyService;
 
 	public static final int DELETED_STATUS = 0;
@@ -55,6 +53,7 @@ public class ReceiptService {
 						  ReceiptStatusLogRepository receiptStatusLogRepository,
 						  StatusRepository statusRepository,
 						  WarehouseRepository warehouseRepository,
+						  DocumentWarehouseScopeService documentWarehouseScopeService,
 						  KeyService keyService) {
 		this.receiptRepository = receiptRepository;
 		this.userRepository = userRepository;
@@ -62,13 +61,16 @@ public class ReceiptService {
 		this.receiptStatusLogRepository = receiptStatusLogRepository;
 		this.statusRepository = statusRepository;
 		this.warehouseRepository = warehouseRepository;
+		this.documentWarehouseScopeService = documentWarehouseScopeService;
 		this.keyService = keyService;
 	}
 
-	public ReceiptResponseDTO createReceiptWithDetails(ReceiptCreateRequestDTO request) {
+	public ReceiptResponseDTO createReceiptWithDetails(ReceiptCreateRequestDTO request, Long requesterUserId) {
+		Users requester = documentWarehouseScopeService.getRequesterOrThrow(requesterUserId);
 		Users user = userRepository.findById(request.getUserId()).orElseThrow(() -> new IllegalArgumentException("User not found"));
 		String originCode = resolveWarehouseCode(request.getOrigin(), "origin");
 		String destinyCode = resolveWarehouseCode(request.getDestiny(), "destiny");
+		documentWarehouseScopeService.assertCanAccessDocument(requester, originCode, destinyCode);
 
 		Receipt receipt = new Receipt();
 		receipt.setReceiptKey(StringUtils.hasText(request.getReceiptKey()) ? request.getReceiptKey().trim() : keyService.getKey(DocumentsEnum.RECEIPT, null).getCompletKey());
@@ -101,9 +103,11 @@ public class ReceiptService {
 		return toDto(created);
 	}
 
-	public ReceiptResponseDTO updateReceiptWithDetails(Long receiptId, ReceiptUpdateRequestDTO request) {
+	public ReceiptResponseDTO updateReceiptWithDetails(Long receiptId, ReceiptUpdateRequestDTO request, Long requesterUserId) {
+		Users requester = documentWarehouseScopeService.getRequesterOrThrow(requesterUserId);
 		Receipt receipt = receiptRepository.findById(receiptId)
 				.orElseThrow(() -> new IllegalArgumentException("Receipt not found"));
+		documentWarehouseScopeService.assertCanAccessDocument(requester, receipt.getOrigin(), receipt.getDestiny());
 		Integer previousStatus = receipt.getStatus();
 
 		receipt.setStatus(request.getStatus());
@@ -131,8 +135,10 @@ public class ReceiptService {
 	}
 
 	public void deleteReceipt(Long receiptId, Long requesterId) {
+		Users requester = documentWarehouseScopeService.getRequesterOrThrow(requesterId);
 		Receipt receipt = receiptRepository.findById(receiptId)
 				.orElseThrow(() -> new IllegalArgumentException("Receipt not found"));
+		documentWarehouseScopeService.assertCanAccessDocument(requester, receipt.getOrigin(), receipt.getDestiny());
 
 		Long actorUserId = requesterId != null ? requesterId : receipt.getUser().getId();
 		String actorEmail = findUserEmailById(actorUserId);
@@ -193,40 +199,26 @@ public class ReceiptService {
 	}
 
 	@Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
-	public List<ReceiptResponseDTO> findByUserAndWarehouse(Long userId, String warehouseCode) {
+	public List<ReceiptResponseDTO> findByUserAndWarehouse(Long userId, String warehouseCode, Long requesterUserId) {
+		Users requester = documentWarehouseScopeService.getRequesterOrThrow(requesterUserId);
 		String normalizedWarehouseCode = normalizeWarehouseCode(warehouseCode);
 		List<Receipt> receipts = receiptRepository.findByUserAndWarehouseOrderByIdDesc(userId, normalizedWarehouseCode);
-		return mapToDtoList(receipts);
+		return mapToDtoList(filterByRequesterScope(requester, receipts));
 	}
 
 	@Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
 	public List<ReceiptResponseDTO> findAll(Long requesterUserId) {
-		Users requester = userRepository.findById(requesterUserId)
-				.orElseThrow(() -> new IllegalArgumentException("Requester user not found"));
-		String requesterRole = normalizeRoleName(requester.getRole() != null ? requester.getRole().getName() : null);
-
-		if (Role.OWNER.equals(requesterRole)) {
-			return mapToDtoList(receiptRepository.findAllOrderByIdDesc());
-		}
-
-		List<String> allowedWarehouseCodes = toAllowedWarehouseCodes(requester);
-		if (allowedWarehouseCodes.isEmpty()) {
-			return Collections.emptyList();
-		}
-
-		if (Role.USER.equals(requesterRole)) {
-			return mapToDtoList(receiptRepository.findByDestinyInOrderByIdDesc(allowedWarehouseCodes));
-		}
-
-		if (Role.ADMIN.equals(requesterRole)) {
-			return mapToDtoList(receiptRepository.findByOriginInAndDestinyInOrderByIdDesc(allowedWarehouseCodes, allowedWarehouseCodes));
-		}
-
-		return Collections.emptyList();
+		Users requester = documentWarehouseScopeService.getRequesterOrThrow(requesterUserId);
+		List<Receipt> receipts = receiptRepository.findAllOrderByIdDesc();
+		return mapToDtoList(filterByRequesterScope(requester, receipts));
 	}
 
 	@Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
-	public List<ReceiptStatusLogResponseDTO> findStatusHistory(Long receiptId) {
+	public List<ReceiptStatusLogResponseDTO> findStatusHistory(Long receiptId, Long requesterUserId) {
+		Users requester = documentWarehouseScopeService.getRequesterOrThrow(requesterUserId);
+		Receipt receipt = receiptRepository.findById(receiptId)
+				.orElseThrow(() -> new IllegalArgumentException("Receipt not found"));
+		documentWarehouseScopeService.assertCanAccessDocument(requester, receipt.getOrigin(), receipt.getDestiny());
 		List<ReceiptStatusLog> logs = receiptStatusLogRepository.findByReceiptIdOrderByChangedAtDesc(receiptId);
 		List<ReceiptStatusLogResponseDTO> response = new ArrayList<>();
 		for (ReceiptStatusLog log : logs) {
@@ -338,21 +330,16 @@ public class ReceiptService {
 		return normalized;
 	}
 
-	private List<String> toAllowedWarehouseCodes(Users user) {
-		if (user == null || user.getWarehousesAllowed() == null) {
-			return Collections.emptyList();
-		}
-		List<String> codes = new ArrayList<>();
-		for (Warehouse warehouse : user.getWarehousesAllowed()) {
-			if (warehouse == null || !StringUtils.hasText(warehouse.getCode())) {
+	private List<Receipt> filterByRequesterScope(Users requester, List<Receipt> receipts) {
+		List<Receipt> filtered = new ArrayList<>();
+		for (Receipt receipt : receipts) {
+			if (receipt == null) {
 				continue;
 			}
-			codes.add(warehouse.getCode().trim().toUpperCase(Locale.ROOT));
+			if (documentWarehouseScopeService.canAccessDocument(requester, receipt.getOrigin(), receipt.getDestiny())) {
+				filtered.add(receipt);
+			}
 		}
-		return codes;
-	}
-
-	private String normalizeRoleName(String roleName) {
-		return StringUtils.hasText(roleName) ? roleName.trim().toUpperCase(Locale.ROOT) : "";
+		return filtered;
 	}
 }
