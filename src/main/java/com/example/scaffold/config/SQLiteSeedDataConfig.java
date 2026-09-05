@@ -6,7 +6,10 @@ import com.example.scaffold.domain.Audits.Keys;
 import com.example.scaffold.domain.auths.Permissions;
 import com.example.scaffold.domain.auths.Role;
 import com.example.scaffold.domain.auths.RolePermissions;
+import com.example.scaffold.domain.auths.Users;
 import com.example.scaffold.domain.documents.DocumentsEnum;
+import com.example.scaffold.domain.documents.Receipt;
+import com.example.scaffold.domain.documents.ReceiptDetail;
 import com.example.scaffold.domain.inventory.Article;
 import com.example.scaffold.domain.inventory.Warehouse;
 import com.example.scaffold.dto.auth.UserDTO;
@@ -14,6 +17,7 @@ import com.example.scaffold.repository.ArticleRepository;
 import com.example.scaffold.repository.KeyRepository;
 import com.example.scaffold.repository.ModuleRepository;
 import com.example.scaffold.repository.PermissionRepository;
+import com.example.scaffold.repository.ReceiptRepository;
 import com.example.scaffold.repository.RoleRepository;
 import com.example.scaffold.repository.RolePermissionsRepository;
 import com.example.scaffold.repository.StatusRepository;
@@ -50,7 +54,8 @@ public class SQLiteSeedDataConfig {
                                            RolePermissionsRepository rolePermissionsRepository,
                                            StatusRepository statusRepository,
                                            KeyRepository keyRepository,
-                                            ArticleRepository articleRepository,
+                                           ArticleRepository articleRepository,
+                                           ReceiptRepository receiptRepository,
                                             WarehouseRepository warehouseRepository) {
         return args -> {
             ensureRole(roleRepository, Role.USER, "Default user role");
@@ -142,7 +147,66 @@ public class SQLiteSeedDataConfig {
             ensureArticle(articleRepository, "ART-0001", "Mountain Tire", "SPARE", "Contoso", "35.00", "49.90");
             ensureArticle(articleRepository, "ART-0002", "Hydraulic Brake Kit", "SPARE", "Fabrikam", "58.00", "84.00");
             ensureArticle(articleRepository, "ART-0003", "Carbon Handlebar", "COMPONENT", "Northwind", "72.00", "115.00");
+
+            Users admin = userService.findByEmailDb("admin@local").orElse(null);
+            Users owner = userService.findByEmailDb("owner@local").orElse(null);
+            Users user = userService.findByEmailDb("user1@local").orElse(null);
+            LocalDateTime now = LocalDateTime.now();
+
+            ensureReceipt(receiptRepository, articleRepository, admin, "SEED-RCP-001", 10,
+                    "WH-001", "WH-002", "Nueva transferencia entre depósitos", now.minusDays(5),
+                    "ART-0001", "ART-0002");
+            ensureReceipt(receiptRepository, articleRepository, admin, "SEED-RCP-002", 55,
+                    "WH-002", "WH-001", "Transferencia en preparación", now.minusDays(4),
+                    "ART-0003");
+            ensureReceipt(receiptRepository, articleRepository, owner, "SEED-RCP-003", 75,
+                    "WH-003", "WH-001", "Transferencia lista para despacho", now.minusDays(3),
+                    "ART-0001", "ART-0003");
+            ensureReceipt(receiptRepository, articleRepository, owner, "SEED-RCP-004", 95,
+                    "WH-001", "WH-003", "Transferencia despachada", now.minusDays(2),
+                    "ART-0002");
+            ensureReceipt(receiptRepository, articleRepository, user, "SEED-RCP-005", 110,
+                    "WH-002", "WH-001", "Recepción confirmada", now.minusDays(1),
+                    "ART-0001", "ART-0002", "ART-0003");
         };
+    }
+
+    private void ensureReceipt(ReceiptRepository receiptRepository,
+                               ArticleRepository articleRepository,
+                               Users user,
+                               String receiptKey,
+                               int status,
+                               String origin,
+                               String destiny,
+                               String description,
+                               LocalDateTime creationDate,
+                               String... articleSkus) {
+        if (user == null || receiptRepository.findAll().stream()
+                .anyMatch(receipt -> receiptKey.equals(receipt.getReceiptKey()))) {
+            return;
+        }
+
+        Receipt receipt = new Receipt();
+        receipt.setReceiptKey(receiptKey);
+        receipt.setStatus(status);
+        receipt.setOrigin(origin);
+        receipt.setDestiny(destiny);
+        receipt.setDescription(description);
+        receipt.setUser(user);
+        receipt.setCreationDate(creationDate);
+
+        for (String articleSku : articleSkus) {
+            Article article = articleRepository.findBySku(articleSku)
+                    .orElseThrow(() -> new IllegalStateException("Seed article not found: " + articleSku));
+
+            ReceiptDetail detail = new ReceiptDetail();
+            detail.setReceipt(receipt);
+            detail.setArticle(article);
+            detail.setCreationDate(creationDate);
+            receipt.getDetaile().add(detail);
+        }
+
+        receiptRepository.save(receipt);
     }
 
     private void ensureStatus(StatusRepository statusRepository, Integer code, String description) {

@@ -39,6 +39,10 @@ public class BearerTokenInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
                              @NonNull Object handler) {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         try {
             String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
             if (authorization == null || !authorization.startsWith("Bearer ")) {

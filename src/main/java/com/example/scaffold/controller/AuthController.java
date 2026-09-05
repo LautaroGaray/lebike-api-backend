@@ -53,7 +53,7 @@ public class AuthController {
 		session.removeAttribute(TokenService.SESSION_TOKEN);
         String token = tokenService.getOrCreateToken(session, userFromDb.getId(), userFromDb.getRoleId(), userFromDb.getRoleName());
 
-        ResponseData responseData = new ResponseData(new TokenResponse(token), true, "Login successful");
+        ResponseData responseData = new ResponseData(new TokenResponse(token, userFromDb.getRoleName()), true, "Login successful");
 
         return ResponseEntity.ok(responseData);
 
