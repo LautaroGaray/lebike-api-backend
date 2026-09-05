@@ -1,0 +1,30 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "code": "WH-001",
+      "name": "Berazategui",
+      "active": true,
+      "creationDate": "2026-09-01T08:00:00",
+      "editDate": "2026-09-01T08:00:00"
+    },
+    {
+      "id": 2,
+      "code": "WH-002",
+      "name": "Ezpeleta",
+      "active": true,
+      "creationDate": "2026-09-01T08:00:00",
+      "editDate": "2026-09-01T08:00:00"
+    },
+    {
+      "id": 3,
+      "code": "WH-003",
+      "name": "Bernal",
+      "active": true,
+      "creationDate": "2026-09-01T08:00:00",
+      "editDate": "2026-09-01T08:00:00"
+    }
+  ],
+  "isSuccess": true,
+  "message": "Warehouses retrieved successfully"
+}

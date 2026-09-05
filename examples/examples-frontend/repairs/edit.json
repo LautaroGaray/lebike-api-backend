@@ -1,0 +1,29 @@
+{
+  "data": {
+    "id": 5,
+    "description": "Reemplazo de neumático delantero y ajuste de freno",
+    "price": 140.00,
+    "warehouseId": 1,
+    "warehouseCode": "WH-001",
+    "warehouseName": "Berazategui",
+    "articles": [
+      {
+        "id": 1,
+        "sku": "ART-0001",
+        "name": "Mountain Tire"
+      },
+      {
+        "id": 2,
+        "sku": "ART-0002",
+        "name": "Hydraulic Brake Kit"
+      }
+    ],
+    "userId": 3,
+    "username": "user1",
+    "userEmail": "user1@local",
+    "creationDate": "2026-09-04T18:10:00",
+    "editDate": "2026-09-04T18:35:00"
+  },
+  "isSuccess": true,
+  "message": "Repair updated successfully"
+}

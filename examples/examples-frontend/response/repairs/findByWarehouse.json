@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "id": 5,
+      "description": "Reemplazo de neumático delantero",
+      "price": 120.50,
+      "warehouseId": 1,
+      "warehouseCode": "WH-001",
+      "warehouseName": "Berazategui",
+      "articles": [
+        {
+          "id": 1,
+          "sku": "ART-0001",
+          "name": "Mountain Tire"
+        }
+      ],
+      "userId": 3,
+      "username": "user1",
+      "userEmail": "user1@local",
+      "creationDate": "2026-09-04T18:10:00",
+      "editDate": "2026-09-04T18:10:00"
+    }
+  ],
+  "isSuccess": true,
+  "message": "Repairs retrieved successfully"
+}

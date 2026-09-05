@@ -1,0 +1,16 @@
+{
+  "data": {
+    "id": 2,
+    "nickName": "admin",
+    "email": "admin@local",
+    "password": null,
+    "roleId": 2,
+    "roleName": "ADMIN",
+    "warehouseIds": [1, 2, 3],
+    "warehouseCodes": ["WH-001", "WH-002", "WH-003"],
+    "creationDate": "2026-09-01T08:05:00",
+    "editDate": "2026-09-04T19:22:00"
+  },
+  "isSuccess": true,
+  "message": "Allowed warehouses updated successfully"
+}

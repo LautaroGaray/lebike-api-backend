@@ -1,0 +1,14 @@
+{
+  "data": {
+    "id": 1,
+    "sku": "ART-0001",
+    "externalSku": null,
+    "name": "Mountain Tire",
+    "type": "SPARE",
+    "supplier": "Contoso",
+    "purchasePrice": 120.00,
+    "salePrice": 180.00
+  },
+  "isSuccess": true,
+  "message": "Article found successfully"
+}

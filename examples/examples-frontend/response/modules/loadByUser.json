@@ -1,0 +1,61 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "mainId": "MOD_USERS",
+      "name": "Users",
+      "parentId": null,
+      "children": [],
+      "permissions": {
+        "READ": true,
+        "WRITE": true
+      }
+    },
+    {
+      "id": 2,
+      "mainId": "MOD_WAREHOUSES",
+      "name": "Warehouses",
+      "parentId": null,
+      "children": [],
+      "permissions": {
+        "READ": true,
+        "WRITE": false
+      }
+    },
+    {
+      "id": 3,
+      "mainId": "MOD_ARTICLES",
+      "name": "Articles",
+      "parentId": null,
+      "children": [],
+      "permissions": {
+        "READ": true,
+        "WRITE": true
+      }
+    },
+    {
+      "id": 4,
+      "mainId": "MOD_RECEIPTS",
+      "name": "Receipts",
+      "parentId": null,
+      "children": [],
+      "permissions": {
+        "READ": true,
+        "WRITE": true
+      }
+    },
+    {
+      "id": 5,
+      "mainId": "MOD_REPAIRS",
+      "name": "Repairs",
+      "parentId": null,
+      "children": [],
+      "permissions": {
+        "READ": true,
+        "WRITE": true
+      }
+    }
+  ],
+  "isSuccess": true,
+  "message": "Modules loaded successfully"
+}

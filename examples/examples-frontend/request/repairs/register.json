@@ -1,0 +1,12 @@
+{
+  "repairOrder": "R-100",
+  "warehouseId": 2,
+  "description": "Brake replacement",
+  "items": [
+    {
+      "articleId": 5,
+      "qty": 1
+    }
+  ],
+  "cost": 45.0
+}

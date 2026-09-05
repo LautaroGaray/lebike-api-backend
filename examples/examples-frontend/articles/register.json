@@ -1,0 +1,14 @@
+{
+  "data": {
+    "id": 4,
+    "sku": "ART-0100",
+    "externalSku": null,
+    "name": "Disc Brake Rotor",
+    "type": "SPARE",
+    "supplier": "Contoso",
+    "purchasePrice": 44.50,
+    "salePrice": 69.90
+  },
+  "isSuccess": true,
+  "message": "Article created successfully"
+}

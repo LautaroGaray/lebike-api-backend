@@ -1,0 +1,36 @@
+{
+  "data": {
+    "id": 10,
+    "receiptKey": "RCP-2026-001",
+    "status": 55,
+    "statusDescription": "on preparation",
+    "origin": "WH-001",
+    "destiny": "WH-002",
+    "description": "Transfer of electronic components",
+    "userId": 3,
+    "username": "user1",
+    "userEmail": "user1@local",
+    "creationDate": "2026-09-04T17:45:00",
+    "editDate": "2026-09-04T18:00:00",
+    "details": [
+      {
+        "id": 21,
+        "articleId": 1,
+        "articleSku": "ART-0001",
+        "articleName": "Mountain Tire",
+        "creationDate": "2026-09-04T17:45:00",
+        "editDate": "2026-09-04T18:00:00"
+      },
+      {
+        "id": 22,
+        "articleId": 2,
+        "articleSku": "ART-0002",
+        "articleName": "Hydraulic Brake Kit",
+        "creationDate": "2026-09-04T17:45:00",
+        "editDate": "2026-09-04T18:00:00"
+      }
+    ]
+  },
+  "isSuccess": true,
+  "message": "Receipt updated successfully"
+}

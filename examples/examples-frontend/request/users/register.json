@@ -1,0 +1,8 @@
+{
+  "username": "jdoe",
+  "email": "jdoe@example.com",
+  "password": "P@ssw0rd",
+  "warehouses": [
+    1
+  ]
+}

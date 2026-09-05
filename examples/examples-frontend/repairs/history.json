@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "id": 501,
+      "repairId": 5,
+      "description": "Reemplazo de neumático delantero",
+      "actionType": "CREATE",
+      "price": 120.50,
+      "warehouseId": 1,
+      "articleIds": [1, 2],
+      "userId": 3,
+      "creationDate": "2026-09-04T18:10:00"
+    },
+    {
+      "id": 502,
+      "repairId": 5,
+      "description": "Reemplazo de neumático delantero y ajuste de freno",
+      "actionType": "UPDATE",
+      "price": 140.00,
+      "warehouseId": 1,
+      "articleIds": [1, 2],
+      "userId": 3,
+      "creationDate": "2026-09-04T18:35:00"
+    }
+  ],
+  "isSuccess": true,
+  "message": "Repair history retrieved successfully"
+}

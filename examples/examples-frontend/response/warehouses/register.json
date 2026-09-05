@@ -1,0 +1,12 @@
+{
+  "data": {
+    "id": 4,
+    "code": "WH-004",
+    "name": "Morón",
+    "active": true,
+    "creationDate": "2026-09-04T18:45:00",
+    "editDate": "2026-09-04T18:45:00"
+  },
+  "isSuccess": true,
+  "message": "Warehouse created successfully"
+}

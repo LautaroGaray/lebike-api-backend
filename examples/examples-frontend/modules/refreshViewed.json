@@ -1,0 +1,27 @@
+{
+  "data": {
+    "id": 3,
+    "mainId": "MOD_ARTICLES",
+    "name": "Articles",
+    "parentId": null,
+    "children": [
+      {
+        "id": 31,
+        "mainId": "MOD_ARTICLES_REGISTER",
+        "name": "Register",
+        "parentId": 3,
+        "children": [],
+        "permissions": {
+          "READ": false,
+          "WRITE": true
+        }
+      }
+    ],
+    "permissions": {
+      "READ": true,
+      "WRITE": true
+    }
+  },
+  "isSuccess": true,
+  "message": "Module access refreshed successfully"
+}

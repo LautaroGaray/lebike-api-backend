@@ -1,0 +1,8 @@
+{
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZU5hbWUiOiJPV05FUiIsInJvbGVPd25lciI6dHJ1ZX0.9n0K8m7sX4E2i9dF7xvPj7l1QxSkxjSbs6b2NQW0QmM",
+    "type": "Bearer"
+  },
+  "isSuccess": true,
+  "message": "Login successful"
+}

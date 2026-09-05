@@ -1,0 +1,16 @@
+{
+  "data": {
+    "id": 4,
+    "nickName": "operator01",
+    "email": "operator01@local",
+    "password": null,
+    "roleId": 3,
+    "roleName": "USER",
+    "warehouseIds": [1],
+    "warehouseCodes": ["WH-001"],
+    "creationDate": "2026-09-04T18:30:00",
+    "editDate": "2026-09-04T18:30:00"
+  },
+  "isSuccess": true,
+  "message": "User registered successfully"
+}

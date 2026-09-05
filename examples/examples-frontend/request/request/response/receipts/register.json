@@ -1,0 +1,12 @@
+{
+  "userId": 1,
+  "warehouseId": 2,
+  "items": [
+    {
+      "articleId": 10,
+      "quantity": 2,
+      "price": 199.99
+    }
+  ],
+  "total": 399.98
+}

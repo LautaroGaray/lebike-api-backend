@@ -1,0 +1,42 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "nickName": "owner",
+      "email": "owner@local",
+      "password": null,
+      "roleId": 1,
+      "roleName": "OWNER",
+      "warehouseIds": [1, 2, 3],
+      "warehouseCodes": ["WH-001", "WH-002", "WH-003"],
+      "creationDate": "2026-09-01T08:00:00",
+      "editDate": "2026-09-01T08:00:00"
+    },
+    {
+      "id": 2,
+      "nickName": "admin",
+      "email": "admin@local",
+      "password": null,
+      "roleId": 2,
+      "roleName": "ADMIN",
+      "warehouseIds": [1, 2],
+      "warehouseCodes": ["WH-001", "WH-002"],
+      "creationDate": "2026-09-01T08:05:00",
+      "editDate": "2026-09-01T08:05:00"
+    },
+    {
+      "id": 3,
+      "nickName": "user1",
+      "email": "user1@local",
+      "password": null,
+      "roleId": 3,
+      "roleName": "USER",
+      "warehouseIds": [1],
+      "warehouseCodes": ["WH-001"],
+      "creationDate": "2026-09-01T08:10:00",
+      "editDate": "2026-09-01T08:10:00"
+    }
+  ],
+  "isSuccess": true,
+  "message": "Users retrieved successfully"
+}
