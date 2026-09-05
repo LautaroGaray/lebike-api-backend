@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -100,7 +101,7 @@ public class ReceiptService {
 
 		Receipt created = receiptRepository.save(receipt);
 		registerStatusLogSnapshot(created, null, created.getStatus(), created.getUser().getId(), created.getUser().getEmail(), RECEIPT_CREATED_EVENT);
-		return toDto(created);
+		return toDto(created, requester);
 	}
 
 	public ReceiptResponseDTO updateReceiptWithDetails(Long receiptId, ReceiptUpdateRequestDTO request, Long requesterUserId) {
@@ -131,7 +132,7 @@ public class ReceiptService {
 
 		Receipt updated = receiptRepository.save(receipt);
 		registerStatusLogIfChanged(updated, previousStatus, updated.getStatus());
-		return toDto(updated);
+		return toDto(updated, requester);
 	}
 
 	public void deleteReceipt(Long receiptId, Long requesterId) {
@@ -203,14 +204,14 @@ public class ReceiptService {
 		Users requester = documentWarehouseScopeService.getRequesterOrThrow(requesterUserId);
 		String normalizedWarehouseCode = normalizeWarehouseCode(warehouseCode);
 		List<Receipt> receipts = receiptRepository.findByUserAndWarehouseOrderByIdDesc(userId, normalizedWarehouseCode);
-		return mapToDtoList(filterByRequesterScope(requester, receipts));
+		return mapToDtoList(filterByRequesterScope(requester, receipts), requester);
 	}
 
 	@Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
 	public List<ReceiptResponseDTO> findAll(Long requesterUserId) {
 		Users requester = documentWarehouseScopeService.getRequesterOrThrow(requesterUserId);
 		List<Receipt> receipts = receiptRepository.findAllOrderByIdDesc();
-		return mapToDtoList(filterByRequesterScope(requester, receipts));
+		return mapToDtoList(filterByRequesterScope(requester, receipts), requester);
 	}
 
 	@Transactional(readOnly = true, isolation = Isolation.READ_COMMITTED)
@@ -231,15 +232,15 @@ public class ReceiptService {
 	}
 
 
-	private List<ReceiptResponseDTO> mapToDtoList(List<Receipt> receipts) {
+	private List<ReceiptResponseDTO> mapToDtoList(List<Receipt> receipts, Users requester) {
 		List<ReceiptResponseDTO> response = new ArrayList<>();
 		for (Receipt receipt : receipts) {
-			response.add(toDto(receipt));
+			response.add(toDto(receipt, requester));
 		}
 		return response;
 	}
 
-	private ReceiptResponseDTO toDto(Receipt receipt) {
+	private ReceiptResponseDTO toDto(Receipt receipt, Users requester) {
 		ReceiptResponseDTO dto = new ReceiptResponseDTO();
 		dto.setId(receipt.getId());
 		dto.setStatus(receipt.getStatus());
@@ -259,6 +260,7 @@ public class ReceiptService {
 			dto.setUserEmail(receipt.getUser().getEmail());
 		}
 
+		BigDecimal totalAmount = BigDecimal.ZERO;
 		if (receipt.getDetaile() != null) {
 			for (ReceiptDetail detail : receipt.getDetaile()) {
 				if (detail == null) {
@@ -272,10 +274,19 @@ public class ReceiptService {
 					detailDTO.setArticleId(detail.getArticle().getId());
 					detailDTO.setArticleSku(detail.getArticle().getSku());
 					detailDTO.setArticleName(detail.getArticle().getName());
+					detailDTO.setSupplier(detail.getArticle().getSupplier());
+					detailDTO.setSalePrice(detail.getArticle().getSalePrice());
+					if (documentWarehouseScopeService.canViewPurchasePrice(requester)) {
+						detailDTO.setPurchasePrice(detail.getArticle().getPurchasePrice());
+					}
+					if (detail.getArticle().getSalePrice() != null) {
+						totalAmount = totalAmount.add(detail.getArticle().getSalePrice());
+					}
 				}
 				dto.getDetails().add(detailDTO);
 			}
 		}
+		dto.setTotalAmount(totalAmount);
 
 		return dto;
 	}

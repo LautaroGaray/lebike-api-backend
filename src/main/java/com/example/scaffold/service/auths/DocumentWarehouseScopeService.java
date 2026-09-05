@@ -88,6 +88,11 @@ public class DocumentWarehouseScopeService {
         return Role.OWNER.equals(role);
     }
 
+    public boolean canViewPurchasePrice(Users requester) {
+        String role = normalizeRoleName(requester != null && requester.getRole() != null ? requester.getRole().getName() : null);
+        return Role.ADMIN.equals(role) || Role.OWNER.equals(role);
+    }
+
     private String normalizeRoleName(String roleName) {
         return StringUtils.hasText(roleName) ? roleName.trim().toUpperCase(Locale.ROOT) : "";
     }

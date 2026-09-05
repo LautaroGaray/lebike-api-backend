@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,6 @@ public class ReceiptResponseDTO {
     private String userEmail;
     private LocalDateTime creationDate;
     private LocalDateTime editDate;
+    private BigDecimal totalAmount;
     private List<ReceiptDetailResponseDTO> details = new ArrayList<>();
 }
-
